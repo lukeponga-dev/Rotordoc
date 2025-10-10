@@ -1,176 +1,175 @@
-
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { GoogleGenAI, Chat, GenerateContentResponse } from '@google/genai';
-import { RotorWiseIcon, SendIcon, UserIcon, ExportIcon, RotaryIcon } from './components/Icons';
+import React, { useState, useRef, useEffect } from 'react';
+import { useChatManager } from './components/SessionManager';
 import { ChatMessage } from './components/ChatMessage';
 import { SuggestionPills } from './components/SuggestionPills';
+import { SendIcon, ExportIcon, RotorWiseIcon, HistoryIcon, SaveIcon, TrashIcon } from './components/Icons';
 import { exportToPDF } from './utils/export';
-import { TROUBLESHOOTING_DATA } from './data/troubleshootingData';
-import { Message } from './types';
+import { Session, Message } from './types';
 
 const App: React.FC = () => {
-  const [chat, setChat] = useState<Chat | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [userInput, setUserInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const { messages, isLoading, sendMessage, setHistory } = useChatManager();
+  const [input, setInput] = useState('');
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [isSessionMenuOpen, setIsSessionMenuOpen] = useState(false);
+  
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
-  const initializeChat = useCallback(() => {
+  useEffect(() => {
+    // Load sessions from localStorage on initial render
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-      const systemPrompt = `You are "RotorWise," an expert AI mechanic specializing in Mazda RX-8s, with the knowledge equivalent of 20 years of hands-on experience with rotary engines. Your sole source of information is the provided Mazda RX-8 service manual text. Your goal is to empower the user by providing clear, safe, and actionable diagnostic advice based *exclusively* on this manual.
-
-**Core Directives:**
-
-1.  **Strict Adherence to Manual:** Your entire response MUST be derived from the provided service manual text. Do not invent procedures, specifications, or warnings. If the user's issue is not covered in the text, you MUST state: "The provided service manual excerpt does not contain information on this specific issue. For safety and accuracy, please consult a qualified professional mechanic or a complete service manual." Do not provide generic car advice.
-
-2.  **Structured & Actionable Response:** Format your diagnosis in Markdown with the following strict structure:
-    *   **Diagnosis:** A concise summary of the most probable issue based on the user's symptoms.
-    *   **Possible Causes:** A bulleted list of potential causes sourced directly from the manual.
-    *   **Recommended Actions:** A numbered list of step-by-step instructions. Use direct, commanding language (e.g., "Remove the front tunnel member," not "You should remove..."). Reference specific procedures and page numbers from the manual when available (e.g., "Refer to 'Propeller Shaft Removal Note' on Page 3").
-    *   **Required Tools & Parts (if mentioned):** A bulleted list of any Special Service Tools (SSTs), specific parts (e.g., "new locknut," "new washer"), or materials (e.g., "differential oil") mentioned in the manual for the procedure.
-    *   **Safety First:** Reproduce any relevant "CAUTION:" or "WARNING:" notes from the manual verbatim. This is critical.
-
-3.  **Persona & Interaction:**
-    *   Maintain a professional, confident, and helpful tone.
-    *   For your very first message in a conversation, introduce yourself: "Hello, I'm RotorWise, your AI rotary engine expert. How can I help you with your RX-8 today?"
-    *   If the user's input is unclear, ask specific clarifying questions to narrow down the symptoms before providing a diagnosis.
-
-**Service Manual Data:**
----
-${TROUBLESHOOTING_DATA}
----
-`;
-      const chatSession = ai.chats.create({
-        model: 'gemini-2.5-flash',
-        config: { systemInstruction: systemPrompt },
-      });
-      setChat(chatSession);
-    } catch (e) {
-      console.error(e);
-      setError('Failed to initialize the AI. Please check the API key and configuration.');
+      const savedSessions = localStorage.getItem('rotorwise_sessions');
+      if (savedSessions) {
+        setSessions(JSON.parse(savedSessions));
+      }
+    } catch (error) {
+      console.error("Failed to load sessions from localStorage:", error);
+      localStorage.removeItem('rotorwise_sessions');
     }
   }, []);
 
   useEffect(() => {
-    initializeChat();
-  }, [initializeChat]);
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-  useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-    }
-  }, [messages, isLoading]);
-
-  const handleSendMessage = async (messageText: string) => {
-    if (isLoading || !messageText.trim() || !chat) return;
-
-    setIsLoading(true);
-    setError(null);
-    const newUserMessage: Message = { role: 'user', content: messageText };
-    setMessages(prev => [...prev, newUserMessage]);
-    setUserInput('');
-
-    try {
-      const stream = await chat.sendMessageStream({ message: messageText });
-      let modelResponse = '';
-      setMessages(prev => [...prev, { role: 'model', content: '' }]);
-
-      for await (const chunk of stream) {
-        modelResponse += chunk.text;
-        setMessages(prev => {
-          const newMessages = [...prev];
-          newMessages[newMessages.length - 1].content = modelResponse;
-          return newMessages;
-        });
-      }
-    } catch (e) {
-      console.error(e);
-      const errorMessage = 'Sorry, I ran into a problem. Please try again.';
-      setError(errorMessage);
-       setMessages(prev => [...prev, { role: 'model', content: errorMessage, isError: true }]);
-    } finally {
-      setIsLoading(false);
+  const handleSend = () => {
+    if (input.trim() && !isLoading) {
+      sendMessage(input);
+      setInput('');
     }
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    setUserInput(suggestion);
-    handleSendMessage(suggestion);
+    sendMessage(suggestion);
   };
   
-  return (
-    <div className="h-full flex flex-col bg-transparent text-gray-200">
-      <header className="flex items-center justify-between p-4 bg-gray-800/80 backdrop-blur-sm border-b border-cyan-500/30 shadow-lg">
-        <div className="flex items-center space-x-3">
-          <RotorWiseIcon className="w-10 h-10 text-cyan-400" />
-          <div>
-            <h1 className="text-xl font-bold text-white">RotorWise AI</h1>
-            <p className="text-sm text-cyan-400">Your personal rotary engine expert</p>
-          </div>
-        </div>
-        {messages.length > 0 && (
-          <button
-            onClick={() => exportToPDF(messages)}
-            className="flex items-center px-4 py-2 bg-cyan-600 hover:bg-cyan-700 rounded-md transition-colors duration-200 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={messages.length === 0}
-            title="Export chat to PDF"
-          >
-            <ExportIcon className="w-5 h-5 mr-2" />
-            Export
-          </button>
-        )}
-      </header>
+  const handleExport = () => {
+    exportToPDF(messages);
+  };
 
-      <main ref={chatContainerRef} className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
-        {messages.length === 0 && !isLoading && (
-            <SuggestionPills onSuggestionClick={handleSuggestionClick} />
-        )}
-        {messages.map((msg, index) => (
-          <ChatMessage key={index} message={msg} />
-        ))}
-        {isLoading && messages[messages.length-1]?.role === 'user' && (
-          <div className="flex items-start space-x-4 chat-message-container">
-              <div className="flex-shrink-0 w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center">
-                  <RotorWiseIcon className="w-6 h-6 text-cyan-400" />
-              </div>
-              <div className="bg-gray-800 rounded-lg p-4 mt-2 flex items-center space-x-3">
-                <RotaryIcon className="w-6 h-6 animate-spin text-cyan-400" />
-                <span className="font-semibold text-gray-300">RotorWise is thinking...</span>
+  const saveSession = () => {
+    if (messages.length === 0) return;
+    const sessionName = messages.find(m => m.role === 'user')?.content.substring(0, 30) || 'New Session';
+    const newSession: Session = {
+      id: new Date().toISOString(),
+      name: `${sessionName}... (${new Date().toLocaleTimeString()})`,
+      messages: messages,
+    };
+    const updatedSessions = [...sessions, newSession];
+    setSessions(updatedSessions);
+    localStorage.setItem('rotorwise_sessions', JSON.stringify(updatedSessions));
+    setIsSessionMenuOpen(false);
+  };
+
+  const loadSession = (sessionId: string) => {
+    const sessionToLoad = sessions.find(s => s.id === sessionId);
+    if (sessionToLoad) {
+      setHistory(sessionToLoad.messages);
+    }
+    setIsSessionMenuOpen(false);
+  };
+  
+  const deleteSession = (sessionId: string) => {
+    const updatedSessions = sessions.filter(s => s.id !== sessionId);
+    setSessions(updatedSessions);
+    localStorage.setItem('rotorwise_sessions', JSON.stringify(updatedSessions));
+  };
+
+
+  return (
+    <div className="flex flex-col h-screen bg-transparent text-white font-sans p-4">
+      <div className="flex flex-col max-w-4xl w-full mx-auto h-full bg-gray-900/80 backdrop-blur-sm rounded-lg border border-gray-700/50 shadow-2xl">
+        {/* Header */}
+        <header className="flex items-center justify-between p-4 border-b border-gray-700/50 shadow-md">
+          <div className="flex items-center space-x-3">
+              <RotorWiseIcon className="w-10 h-10 text-cyan-400" />
+              <div>
+                  <h1 className="text-xl font-bold text-gray-200">RotorWise</h1>
+                  <p className="text-sm text-gray-400">Your Mazda RX-8 AI Mechanic</p>
               </div>
           </div>
-        )}
-        {error && !isLoading && <div className="text-red-400 text-center">{error}</div>}
-      </main>
-      
-      <footer className="p-4 bg-gray-800/80 backdrop-blur-sm border-t border-cyan-500/30">
-         <div className="relative">
-            <textarea
-                value={userInput}
-                onChange={(e) => setUserInput(e.target.value)}
-                onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage(userInput);
-                    }
-                }}
-                placeholder="Describe your car's symptoms... (e.g., 'I hear a clunking noise from the rear when I accelerate')"
-                className="w-full p-4 pr-16 bg-gray-700 border border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-cyan-500 focus:outline-none custom-scrollbar"
-                rows={2}
-                disabled={isLoading}
-            />
+          <div className="flex items-center space-x-2">
+            {/* Session Manager Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setIsSessionMenuOpen(!isSessionMenuOpen)}
+                className="flex items-center space-x-2 px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-sm text-gray-300 hover:bg-gray-600 transition-colors"
+              >
+                <HistoryIcon className="w-5 h-5" />
+                <span>Sessions</span>
+              </button>
+              {isSessionMenuOpen && (
+                <div className="absolute right-0 mt-2 w-72 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-10">
+                  <div className="p-2">
+                    <button onClick={saveSession} disabled={messages.length === 0} className="w-full flex items-center space-x-2 px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 rounded-md disabled:opacity-50">
+                      <SaveIcon className="w-4 h-4" />
+                      <span>Save Current Diagnosis</span>
+                    </button>
+                  </div>
+                  <div className="border-t border-gray-700 max-h-60 overflow-y-auto custom-scrollbar">
+                    {sessions.length > 0 ? (
+                      sessions.map(session => (
+                        <div key={session.id} className="flex items-center justify-between p-2 hover:bg-gray-700/50">
+                          <button onClick={() => loadSession(session.id)} className="flex-1 text-left px-2 py-1 text-sm text-cyan-400 truncate">
+                            {session.name}
+                          </button>
+                          <button onClick={() => deleteSession(session.id)} className="p-1 text-gray-500 hover:text-red-400">
+                            <TrashIcon className="w-4 h-4"/>
+                          </button>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="p-4 text-sm text-gray-500 text-center">No saved sessions.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
             <button
-                onClick={() => handleSendMessage(userInput)}
-                disabled={isLoading || !userInput.trim()}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-cyan-600 rounded-full hover:bg-cyan-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
-                aria-label="Send message"
+              onClick={handleExport}
+              disabled={messages.length === 0 || isLoading}
+              className="flex items-center space-x-2 px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-sm text-gray-300 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-                {isLoading ? <RotaryIcon className="w-6 h-6 text-white animate-spin" /> : <SendIcon className="w-6 h-6 text-white" />}
+              <ExportIcon className="w-5 h-5" />
+              <span>Export</span>
             </button>
-         </div>
-         <p className="text-xs text-gray-500 mt-2 text-center">Disclaimer: This tool provides suggestions based on service manual data. Always consult a qualified professional mechanic for vehicle repairs. The developer is not liable for any damages.</p>
-      </footer>
+          </div>
+        </header>
+
+        {/* Chat Area */}
+        <main className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+          {messages.length === 0 ? (
+            <SuggestionPills onSuggestionClick={handleSuggestionClick} />
+          ) : (
+            messages.map((msg, index) => (
+              <ChatMessage key={index} message={msg} />
+            ))
+          )}
+          <div ref={chatEndRef} />
+        </main>
+
+        {/* Input Form */}
+        <footer className="p-4 border-t border-gray-700/50">
+          <div className="max-w-3xl mx-auto">
+            <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex items-center space-x-3 bg-gray-800 rounded-lg border border-gray-700 focus-within:ring-2 focus-within:ring-cyan-500 transition-shadow">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Describe the issue with your RX-8..."
+                className="flex-1 w-full bg-transparent p-3 text-gray-200 placeholder-gray-500 focus:outline-none"
+                disabled={isLoading}
+              />
+              <button
+                type="submit"
+                disabled={isLoading || !input.trim()}
+                className="p-3 text-cyan-400 disabled:text-gray-600 disabled:cursor-not-allowed hover:text-cyan-300 transition-colors"
+              >
+                {isLoading ? <div className="w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div> : <SendIcon className="w-6 h-6" />}
+              </button>
+            </form>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 };
