@@ -33,7 +33,7 @@ export const exportToPDF = (messages: Message[]): void => {
     doc.setFontSize(12);
     doc.setTextColor(isModel ? 40 : 0);
     
-    const prefix = isModel ? "RotorDoc: " : "You: ";
+    const prefix = isModel ? "RotorWise: " : "You: ";
     const textLines = doc.splitTextToSize(prefix + message.content, maxWidth);
     
     doc.text(textLines, margin, cursorY);
