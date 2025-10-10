@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { GoogleGenAI, Chat, GenerateContentResponse } from '@google/genai';
-import { RotorWiseIcon, SendIcon, UserIcon, ExportIcon, LoadingIcon } from './components/Icons';
+import { RotorWiseIcon, SendIcon, UserIcon, ExportIcon, RotaryIcon } from './components/Icons';
 import { ChatMessage } from './components/ChatMessage';
 import { SuggestionPills } from './components/SuggestionPills';
 import { exportToPDF } from './utils/export';
@@ -135,10 +135,9 @@ ${TROUBLESHOOTING_DATA}
               <div className="flex-shrink-0 w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center">
                   <RotorWiseIcon className="w-6 h-6 text-cyan-400" />
               </div>
-              <div className="bg-gray-800 rounded-lg p-4 mt-2 flex items-center space-x-2">
-                <LoadingIcon className="w-5 h-5 animate-spin text-cyan-400" />
-                <span>RotorWise is thinking</span>
-                <div className="dot-flashing ml-1"></div>
+              <div className="bg-gray-800 rounded-lg p-4 mt-2 flex items-center space-x-3">
+                <RotaryIcon className="w-6 h-6 animate-spin text-cyan-400" />
+                <span className="font-semibold text-gray-300">RotorWise is thinking...</span>
               </div>
           </div>
         )}
@@ -167,7 +166,7 @@ ${TROUBLESHOOTING_DATA}
                 className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-cyan-600 rounded-full hover:bg-cyan-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
                 aria-label="Send message"
             >
-                {isLoading ? <LoadingIcon className="w-6 h-6 text-white animate-spin" /> : <SendIcon className="w-6 h-6 text-white" />}
+                {isLoading ? <RotaryIcon className="w-6 h-6 text-white animate-spin" /> : <SendIcon className="w-6 h-6 text-white" />}
             </button>
          </div>
          <p className="text-xs text-gray-500 mt-2 text-center">Disclaimer: This tool provides suggestions based on service manual data. Always consult a qualified professional mechanic for vehicle repairs. The developer is not liable for any damages.</p>
