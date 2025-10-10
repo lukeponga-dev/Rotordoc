@@ -1,4 +1,3 @@
-
 export const TROUBLESHOOTING_DATA = `
 ==Start of OCR for page 1==
 POWER TRAIN

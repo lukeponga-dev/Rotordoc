@@ -1,7 +1,6 @@
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { GoogleGenAI, Chat, GenerateContentResponse } from '@google/genai';
-import { RotorDocIcon, SendIcon, UserIcon, ExportIcon, LoadingIcon } from './components/Icons';
+import { RotorWiseIcon, SendIcon, UserIcon, ExportIcon, LoadingIcon } from './components/Icons';
 import { ChatMessage } from './components/ChatMessage';
 import { SuggestionPills } from './components/SuggestionPills';
 import { exportToPDF } from './utils/export';
@@ -19,7 +18,7 @@ const App: React.FC = () => {
   const initializeChat = useCallback(() => {
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-      const systemPrompt = `You are an expert Mazda RX-8 mechanic with over 20 years of experience specializing in rotary engines. Your name is "RotorDoc". You will be provided with a section of the official Mazda RX-8 service manual. Your task is to diagnose potential issues based on the user's described symptoms.
+      const systemPrompt = `You are an expert Mazda RX-8 mechanic with over 20 years of experience specializing in rotary engines. Your name is "RotorWise". You will be provided with a section of the official Mazda RX-8 service manual. Your task is to diagnose potential issues based on the user's described symptoms.
 
 RULES:
 1.  **Analyze the User's Symptoms:** Carefully read the user's description of the problem.
@@ -31,7 +30,7 @@ RULES:
     *   **Caution:** Include any relevant "CAUTION" or "WARNING" notes from the manual.
 4.  **Maintain Persona:** Be helpful, professional, and confident in your advice. Address the user directly.
 5.  **Keep it Conversational:** This is a chat. Ask clarifying questions if the user's input is vague.
-6.  **Introduction**: For your very first message, introduce yourself as RotorDoc.
+6.  **Introduction**: For your very first message, introduce yourself as RotorWise.
 
 Here is the relevant section from the service manual:
 ---
@@ -97,12 +96,12 @@ ${TROUBLESHOOTING_DATA}
   };
   
   return (
-    <div className="h-full flex flex-col bg-gray-900 text-gray-200">
-      <header className="flex items-center justify-between p-4 bg-gray-800 border-b border-cyan-500/30 shadow-lg">
+    <div className="h-full flex flex-col bg-transparent text-gray-200">
+      <header className="flex items-center justify-between p-4 bg-gray-800/80 backdrop-blur-sm border-b border-cyan-500/30 shadow-lg">
         <div className="flex items-center space-x-3">
-          <RotorDocIcon className="w-10 h-10 text-cyan-400" />
+          <RotorWiseIcon className="w-10 h-10 text-cyan-400" />
           <div>
-            <h1 className="text-xl font-bold text-white">Mazda RX-8 AI Mechanic</h1>
+            <h1 className="text-xl font-bold text-white">RotorWise AI</h1>
             <p className="text-sm text-cyan-400">Your personal rotary engine expert</p>
           </div>
         </div>
@@ -127,20 +126,21 @@ ${TROUBLESHOOTING_DATA}
           <ChatMessage key={index} message={msg} />
         ))}
         {isLoading && messages[messages.length-1]?.role === 'user' && (
-          <div className="flex items-start space-x-4">
+          <div className="flex items-start space-x-4 chat-message-container">
               <div className="flex-shrink-0 w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center">
-                  <RotorDocIcon className="w-6 h-6 text-cyan-400" />
+                  <RotorWiseIcon className="w-6 h-6 text-cyan-400" />
               </div>
               <div className="bg-gray-800 rounded-lg p-4 mt-2 flex items-center space-x-2">
                 <LoadingIcon className="w-5 h-5 animate-spin text-cyan-400" />
-                <span>RotorDoc is thinking...</span>
+                <span>RotorWise is thinking</span>
+                <div className="dot-flashing ml-1"></div>
               </div>
           </div>
         )}
         {error && !isLoading && <div className="text-red-400 text-center">{error}</div>}
       </main>
       
-      <footer className="p-4 bg-gray-800 border-t border-cyan-500/30">
+      <footer className="p-4 bg-gray-800/80 backdrop-blur-sm border-t border-cyan-500/30">
          <div className="relative">
             <textarea
                 value={userInput}
