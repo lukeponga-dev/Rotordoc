@@ -2,19 +2,16 @@
 # This file configures the deployment of the RotorWise AI application on Render.
 
 services:
-  - type: static # Specifies the service type as a static site.
+  - type: static_site # Corrected service type for a static site.
     name: rotorwise-ai # A name for the service.
-    env: static # The environment to use.
-    # A build command is not required for this project as it's a "buildless" setup.
-    # All dependencies are loaded via CDN through an import map in index.html.
-    buildCommand: ":" # A no-op command to satisfy Render's requirement for a build command.
+    # The build command finds the placeholder __GEMINI_API_KEY__ in index.html
+    # and replaces it with the actual API_KEY from the environment variables.
+    buildCommand: "sed -i 's|__GEMINI_API_KEY__|'\"$API_KEY\"'|g' index.html"
     # The root directory contains index.html and all other static assets to be served.
     publishDir: "."
     envVars:
+      # IMPORTANT: You must set the API_KEY in the Render dashboard under Environment.
       - key: API_KEY
-        # IMPORTANT: The user must set their actual Google Gemini API key in the Render dashboard.
-        # This is a placeholder value. Go to Environment -> Environment Variables and add your key.
-        value: "AIzaSyDHGAVUyNST8vsAjo5bt-G5NpkQUvbnkDg"
     headers:
       # Prevents aggressive caching to ensure users get the latest version of the app.
       - path: "/*"

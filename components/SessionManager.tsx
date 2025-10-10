@@ -1,9 +1,14 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { Message } from '../types';
 import { TROUBLESHOOTING_DATA } from '../data/troubleshootingData';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Extend the window interface for the API key
+declare global {
+  interface Window {
+    GEMINI_API_KEY: string;
+  }
+}
 
 const systemInstruction = `
 **Persona and Expertise:**
@@ -73,17 +78,37 @@ const messageToContent = (messages: Message[]) => {
 export const useChatManager = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isApiConfigured, setIsApiConfigured] = useState(false);
+  const aiRef = useRef<GoogleGenAI | null>(null);
+
+  useEffect(() => {
+    const apiKey = window.GEMINI_API_KEY;
+    if (apiKey && apiKey !== '__GEMINI_API_KEY__') {
+      aiRef.current = new GoogleGenAI({ apiKey });
+      setIsApiConfigured(true);
+    } else {
+      console.error("API Key not found or is a placeholder. Please configure it for deployment.");
+      setIsApiConfigured(false);
+      setMessages([{
+        role: 'model',
+        content: "### Configuration Error\n\nThe application's API key is missing or invalid. The chat service is currently unavailable. Please contact the site administrator to resolve this issue.",
+        isError: true,
+      }]);
+    }
+  }, []);
 
   const setHistory = useCallback((history: Message[]) => {
     setMessages(history);
   }, []);
 
   const startNewChat = useCallback(() => {
+    // Do not clear the error message if the API is not configured.
+    if (!isApiConfigured) return;
     setMessages([]);
-  }, []);
+  }, [isApiConfigured]);
 
   const sendMessage = useCallback(async (text: string, imageUrl?: string | null) => {
-    if (!text.trim() && !imageUrl) return;
+    if (!isApiConfigured || (!text.trim() && !imageUrl)) return;
 
     setIsLoading(true);
     const userMessage: Message = { role: 'user', content: text, imageUrl: imageUrl || undefined };
@@ -96,7 +121,11 @@ export const useChatManager = () => {
     const contents = messageToContent(currentMessages);
 
     try {
-      const responseStream = await ai.models.generateContentStream({
+      if (!aiRef.current) {
+        throw new Error("Gemini AI client is not initialized.");
+      }
+
+      const responseStream = await aiRef.current.models.generateContentStream({
         model: 'gemini-2.5-flash',
         contents,
         config: { systemInstruction },
@@ -146,7 +175,7 @@ export const useChatManager = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [messages]);
+  }, [messages, isApiConfigured]);
 
   return { messages, isLoading, sendMessage, setHistory, startNewChat };
 };
