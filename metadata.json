@@ -1,0 +1,5 @@
+{
+  "name": "Mazda RX-8 AI Mechanic",
+  "description": "An AI-powered diagnostic tool for Mazda RX-8 owners, using official service manual data to troubleshoot powertrain issues. Get expert advice on your rotary engine's problems.",
+  "requestFramePermissions": []
+}
