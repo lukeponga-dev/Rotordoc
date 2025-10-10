@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { GoogleGenAI, Chat } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import { Message } from '../types';
 import { TROUBLESHOOTING_DATA } from '../data/troubleshootingData';
 
@@ -7,10 +7,10 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const systemInstruction = `
 **Persona and Expertise:**
-You are RotorWise, an expert AI Mechanic specializing *exclusively* in the Mazda RX-8 (Series 1 and Series 2) and its 13B-MSP Renesis rotary engine. Your goal is to accurately diagnose mechanical and electrical issues, provide step-by-step troubleshooting, and suggest appropriate repair procedures. Your tone must be professional, meticulous, and encouraging.
+You are RotorWise, an expert AI Mechanic specializing *exclusively* in the Mazda RX-8 (Series 1 and Series 2) and its 13B-MSP Renesis rotary engine. You can analyze both text descriptions and uploaded images of parts, error codes, or symptoms. Your goal is to accurately diagnose mechanical and electrical issues, provide step-by-step troubleshooting, and suggest appropriate repair procedures. Your tone must be professional, meticulous, and encouraging.
 
 **Interaction Flow (The Diagnostic Loop):**
-Follow a systematic, iterative diagnostic process. You must move from symptom to solution by asking clarifying questions.
+Follow a systematic, iterative diagnostic process. You must move from symptom to solution byasking clarifying questions.
 
 1.  **Symptom Acknowledgment:** When the user provides an issue, first acknowledge it and list the 3 most likely *potential* causes, ranked by commonality in the RX-8.
 2.  **Clarifying Question:** Immediately follow with a single, most crucial **clarifying question** to narrow the possibilities (e.g., "Does the hot start issue happen only on the *first* hot restart, or repeatedly?").
@@ -47,51 +47,61 @@ Workshop Manual Data:
 ${TROUBLESHOOTING_DATA}
 `;
 
+const messageToContent = (messages: Message[]) => {
+  return messages.map(msg => {
+    const parts: any[] = [];
+    if (msg.content) {
+      parts.push({ text: msg.content });
+    }
+    if (msg.imageUrl) {
+      const [meta, base64Data] = msg.imageUrl.split(',');
+      const mimeType = meta.split(':')[1].split(';')[0];
+      parts.push({
+        inlineData: {
+          mimeType,
+          data: base64Data
+        }
+      });
+    }
+    return {
+      role: msg.role,
+      parts
+    };
+  }).filter(c => c.parts.length > 0);
+};
 
 export const useChatManager = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [chat, setChat] = useState<Chat>(() => ai.chats.create({
-    model: 'gemini-2.5-flash',
-    config: { systemInstruction },
-  }));
 
   const setHistory = useCallback((history: Message[]) => {
-    const newChat = ai.chats.create({
-        model: 'gemini-2.5-flash',
-        config: { systemInstruction },
-        // @ts-ignore // The SDK type doesn't perfectly match but this is the correct way to load history
-        history: history.map(m => ({
-            role: m.role,
-            parts: [{ text: m.content }]
-        }))
-    });
-    setChat(newChat);
     setMessages(history);
   }, []);
 
   const startNewChat = useCallback(() => {
     setMessages([]);
-    setChat(ai.chats.create({
-      model: 'gemini-2.5-flash',
-      config: { systemInstruction },
-    }));
   }, []);
 
-
-  const sendMessage = useCallback(async (text: string) => {
-    if (!text.trim()) return;
+  const sendMessage = useCallback(async (text: string, imageUrl?: string | null) => {
+    if (!text.trim() && !imageUrl) return;
 
     setIsLoading(true);
-    const userMessage: Message = { role: 'user', content: text };
-    setMessages(prev => [...prev, userMessage]);
+    const userMessage: Message = { role: 'user', content: text, imageUrl: imageUrl || undefined };
+    const currentMessages = [...messages, userMessage];
+    setMessages(currentMessages);
     
-    // Add a temporary empty model message for the loading indicator
     const tempModelMessage: Message = { role: 'model', content: '' };
     setMessages(prev => [...prev, tempModelMessage]);
 
+    const contents = messageToContent(currentMessages);
+
     try {
-      const responseStream = await chat.sendMessageStream({ message: text });
+      const responseStream = await ai.models.generateContentStream({
+        model: 'gemini-2.5-flash',
+        contents,
+        config: { systemInstruction },
+      });
+
       let modelResponse = '';
       for await (const chunk of responseStream) {
         modelResponse += chunk.text;
@@ -105,14 +115,10 @@ export const useChatManager = () => {
         });
       }
     } catch (error) {
-      // Log the detailed error for debugging purposes
       console.error("Error sending message:", error);
-
       let displayMessage = "Sorry, I'm having trouble connecting. Please try again later.";
-
       if (error && typeof error === 'object') {
         const errorMessage = ((error as Error).message || '').toLowerCase();
-        
         if (!navigator.onLine) {
             displayMessage = "You appear to be offline. Please check your internet connection.";
         } else if (errorMessage.includes('api key not valid')) {
@@ -127,17 +133,10 @@ export const useChatManager = () => {
              displayMessage = "A network error occurred. Please check your internet connection and try again.";
         }
       }
-      
-      const errorMessage: Message = { 
-        role: 'model', 
-        content: displayMessage, 
-        isError: true 
-      };
-      
+      const errorMessage: Message = { role: 'model', content: displayMessage, isError: true };
       setMessages(prev => {
         const newMessages = [...prev];
-        // Replace the last (temporary loading) message with the error
-         if (newMessages.length > 0 && newMessages[newMessages.length - 1].role === 'model') {
+        if (newMessages.length > 0 && newMessages[newMessages.length - 1].role === 'model') {
           newMessages[newMessages.length - 1] = errorMessage;
         } else {
           newMessages.push(errorMessage);
@@ -147,7 +146,7 @@ export const useChatManager = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [chat]);
+  }, [messages]);
 
   return { messages, isLoading, sendMessage, setHistory, startNewChat };
 };

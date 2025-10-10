@@ -2,19 +2,44 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useChatManager } from './components/SessionManager';
 import { ChatMessage } from './components/ChatMessage';
 import { SuggestionPills } from './components/SuggestionPills';
-import { SendIcon, ExportIcon, RotorWiseIcon, MenuIcon } from './components/Icons';
+import { SendIcon, ExportIcon, RotorWiseIcon, MenuIcon, PaperclipIcon, MicrophoneIcon, CloseIcon } from './components/Icons';
 import { Sidebar } from './components/Sidebar';
 import { exportToPDF } from './utils/export';
 import { Session, Message } from './types';
 
+// Fix: Define SpeechRecognition interface to fix TypeScript error.
+interface SpeechRecognition {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: (event: any) => void;
+  onstart: () => void;
+  onend: () => void;
+  onerror: (event: any) => void;
+  start: () => void;
+  stop: () => void;
+}
+
+// Extend the window interface for SpeechRecognition
+declare global {
+  interface Window {
+    SpeechRecognition: { new(): SpeechRecognition };
+    webkitSpeechRecognition: { new(): SpeechRecognition };
+  }
+}
+
 const App: React.FC = () => {
   const { messages, isLoading, sendMessage, setHistory, startNewChat } = useChatManager();
   const [input, setInput] = useState('');
+  const [image, setImage] = useState<string | null>(null);
+  const [isListening, setIsListening] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   useEffect(() => {
     try {
@@ -32,15 +57,45 @@ const App: React.FC = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  useEffect(() => {
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognitionAPI) {
+        const recognition = new SpeechRecognitionAPI();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        recognition.onresult = (event: any) => {
+            const text = event.results[event.results.length - 1][0].transcript;
+            setInput(prev => prev ? `${prev} ${text}`.trim() : text);
+        };
+        
+        recognition.onstart = () => setIsListening(true);
+        recognition.onend = () => setIsListening(false);
+        recognition.onerror = (event: any) => {
+            console.error('Speech recognition error:', event.error);
+            setIsListening(false);
+        };
+
+        recognitionRef.current = recognition;
+    } else {
+        console.warn('Speech recognition not supported in this browser.');
+    }
+  }, []);
+
   const handleSend = () => {
-    if (input.trim() && !isLoading) {
-      sendMessage(input);
+    if ((input.trim() || image) && !isLoading) {
+      sendMessage(input, image);
       setInput('');
+      setImage(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    sendMessage(suggestion);
+    sendMessage(suggestion, null);
   };
   
   const handleExport = () => {
@@ -56,7 +111,6 @@ const App: React.FC = () => {
   const saveSession = () => {
     if (messages.length === 0) return;
 
-    // If it's an existing session, update it. Otherwise, create a new one.
     if (activeSessionId) {
        const updatedSessions = sessions.map(s => 
         s.id === activeSessionId ? { ...s, messages: messages } : s
@@ -92,6 +146,26 @@ const App: React.FC = () => {
     localStorage.setItem('rotorwise_sessions', JSON.stringify(updatedSessions));
     if (activeSessionId === sessionId) {
       handleNewChat();
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) return;
+    if (isListening) {
+      recognitionRef.current.stop();
+    } else {
+      recognitionRef.current.start();
     }
   };
 
@@ -137,12 +211,10 @@ const App: React.FC = () => {
             </button>
           </header>
 
-          {/* Loading Bar */}
           <div className="h-0.5 w-full bg-cyan-900/50 relative">
             {isLoading && <div className="absolute inset-0 w-full h-full loading-bar-shimmer" />}
           </div>
 
-          {/* Chat Area */}
           <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 custom-scrollbar">
             {messages.length === 0 ? (
               <SuggestionPills onSuggestionClick={handleSuggestionClick} />
@@ -154,21 +226,42 @@ const App: React.FC = () => {
             <div ref={chatEndRef} />
           </main>
 
-          {/* Input Form */}
           <footer className="p-2 sm:p-4 border-t border-gray-700/50">
             <div className="max-w-3xl mx-auto">
+              {image && (
+                <div className="relative inline-block mb-2 ml-2">
+                  <img src={image} alt="Upload preview" className="w-20 h-20 object-cover rounded-md border border-gray-600" />
+                  <button
+                    onClick={() => {
+                      setImage(null);
+                      if (fileInputRef.current) fileInputRef.current.value = '';
+                    }}
+                    className="absolute -top-2 -right-2 bg-gray-700 text-white rounded-full p-1 border border-gray-500 hover:bg-red-500 transition-colors"
+                    aria-label="Remove image"
+                  >
+                    <CloseIcon className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
               <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex items-center space-x-2 sm:space-x-3 bg-gray-800 rounded-lg border border-gray-700 focus-within:ring-2 focus-within:ring-cyan-500 transition-shadow">
+                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+                <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isLoading} className="p-2 text-cyan-400 hover:text-cyan-300 disabled:text-gray-600 disabled:cursor-not-allowed transition-colors">
+                  <PaperclipIcon className="w-6 h-6" />
+                </button>
                 <input
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Describe your RX-8 issue..."
+                  placeholder={isListening ? "Listening..." : "Describe your RX-8 issue..."}
                   className="flex-1 w-full bg-transparent p-3 text-sm sm:text-base text-gray-200 placeholder-gray-500 focus:outline-none"
                   disabled={isLoading}
                 />
+                <button type="button" onClick={toggleListening} disabled={isLoading} className="p-2 hover:text-cyan-300 disabled:text-gray-600 disabled:cursor-not-allowed transition-colors">
+                   <MicrophoneIcon className={`w-6 h-6 ${isListening ? 'text-red-500 animate-pulse' : 'text-cyan-400'}`} />
+                </button>
                 <button
                   type="submit"
-                  disabled={isLoading || !input.trim()}
+                  disabled={isLoading || (!input.trim() && !image)}
                   className="p-2 sm:p-3 text-cyan-400 disabled:text-gray-600 disabled:cursor-not-allowed hover:text-cyan-300 transition-colors"
                 >
                   {isLoading ? <div className="w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div> : <SendIcon className="w-6 h-6" />}

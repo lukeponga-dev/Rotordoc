@@ -15,7 +15,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const renderModelContent = () => {
     if (message.content) {
       return (
-        <div className="prose prose-invert prose-sm max-w-none prose-p:text-gray-300 prose-li:text-gray-300 prose-headings:text-cyan-400">
+        <div className="prose prose-invert prose-sm max-w-none prose-p:text-gray-200 prose-li:text-gray-200 prose-headings:text-cyan-400">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {message.content}
           </ReactMarkdown>
@@ -33,13 +33,28 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
     return null;
   };
 
+  const renderUserContent = () => {
+    return (
+      <div className="space-y-3">
+        {message.imageUrl && (
+            <img 
+                src={message.imageUrl} 
+                alt="User upload" 
+                className="rounded-lg max-w-xs max-h-64 object-contain border border-cyan-800/50"
+            />
+        )}
+        {message.content && <p className="text-gray-100 text-sm sm:text-base">{message.content}</p>}
+      </div>
+    );
+  };
+
   return (
     <div className={`flex items-start space-x-3 sm:space-x-4 chat-message-container ${isModel ? '' : 'flex-row-reverse space-x-reverse'}`}>
-      <div className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center ${isModel ? 'bg-gray-700' : 'bg-cyan-700'}`}>
+      <div className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shadow-md ${isModel ? 'bg-gray-700 border border-gray-600/50' : 'bg-blue-600 border border-blue-500/50'}`}>
         {isModel ? <RotorWiseIcon className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" /> : <UserIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />}
       </div>
-      <div className={`max-w-2xl w-full rounded-lg px-3 py-2 sm:px-4 sm:py-3 ${isModel ? 'bg-gray-800' : 'bg-cyan-900'}`}>
-        {isModel ? renderModelContent() : <p className="text-white text-sm sm:text-base">{message.content}</p>}
+      <div className={`max-w-2xl w-full rounded-xl px-3 py-2 sm:px-4 sm:py-3 shadow-lg ${isModel ? 'bg-gray-800/70 border border-gray-700/60' : 'bg-gradient-to-br from-cyan-800 to-blue-900 border border-cyan-700/50'}`}>
+        {isModel ? renderModelContent() : renderUserContent()}
          {isModel && message.content && !message.isError && <Feedback />}
       </div>
     </div>
