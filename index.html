@@ -40,6 +40,91 @@
       animation: slide-up 0.3s ease-out forwards;
     }
 
+    /* Loading bar animation */
+    @keyframes loading-bar-shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .loading-bar-shimmer {
+        animation: loading-bar-shimmer 2s linear infinite;
+        background: linear-gradient(to right, transparent 20%, #0891b2 50%, transparent 80%);
+        background-size: 200% 100%;
+    }
+
+    /* Custom styles for rendered markdown diagnosis reports */
+    .prose h3 {
+      border-bottom: 1px solid #374151; /* gray-700 */
+      padding-bottom: 0.5rem;
+      margin-bottom: 1rem;
+      font-size: 1.15rem;
+    }
+
+    .prose h4 {
+      color: #d1d5db; /* gray-300 */
+      font-weight: 600; /* semibold */
+      margin-top: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    /* Table styling */
+    .prose table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+      font-size: 0.875rem;
+    }
+
+    .prose th, .prose td {
+      border: 1px solid #4b5563; /* gray-600 */
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+    }
+
+    .prose thead th {
+      background-color: #1f2937; /* gray-800 */
+      color: #67e8f9; /* cyan-300 */
+      font-weight: bold;
+    }
+
+    .prose tbody tr {
+        transition: background-color 0.2s ease-in-out;
+    }
+
+    .prose tbody tr:nth-child(even) {
+      background-color: rgba(31, 41, 55, 0.4); /* gray-800 with 40% opacity */
+    }
+
+    .prose tbody tr:hover {
+      background-color: rgba(55, 65, 81, 0.6); /* gray-700 with 60% opacity */
+    }
+
+    /* List styling for important notes */
+    .prose ul {
+      list-style-type: none;
+      padding-left: 0;
+    }
+
+    .prose ul li {
+      position: relative;
+      padding-left: 1.75rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .prose ul li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      top: 1px;
+      color: #22d3ee; /* cyan-400 */
+      font-weight: bold;
+      font-size: 1.25rem;
+    }
+
+    .prose ul li strong {
+      color: #a5f3fc; /* cyan-200 */
+      font-weight: 600;
+    }
   </style>
 <script type="importmap">
 {
