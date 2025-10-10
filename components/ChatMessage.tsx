@@ -34,12 +34,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   };
 
   return (
-    <div className={`flex items-start space-x-4 chat-message-container ${isModel ? '' : 'flex-row-reverse space-x-reverse'}`}>
-      <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${isModel ? 'bg-gray-700' : 'bg-cyan-700'}`}>
-        {isModel ? <RotorWiseIcon className="w-6 h-6 text-cyan-400" /> : <UserIcon className="w-6 h-6 text-white" />}
+    <div className={`flex items-start space-x-3 sm:space-x-4 chat-message-container ${isModel ? '' : 'flex-row-reverse space-x-reverse'}`}>
+      <div className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center ${isModel ? 'bg-gray-700' : 'bg-cyan-700'}`}>
+        {isModel ? <RotorWiseIcon className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" /> : <UserIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />}
       </div>
-      <div className={`max-w-2xl w-full rounded-lg px-4 py-3 ${isModel ? 'bg-gray-800' : 'bg-cyan-900'}`}>
-        {isModel ? renderModelContent() : <p className="text-white">{message.content}</p>}
+      <div className={`max-w-2xl w-full rounded-lg px-3 py-2 sm:px-4 sm:py-3 ${isModel ? 'bg-gray-800' : 'bg-cyan-900'}`}>
+        {isModel ? renderModelContent() : <p className="text-white text-sm sm:text-base">{message.content}</p>}
          {isModel && message.content && !message.isError && <Feedback />}
       </div>
     </div>
