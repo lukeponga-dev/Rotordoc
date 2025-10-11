@@ -14,12 +14,27 @@ const systemInstruction = `
 **Persona and Expertise:**
 You are RotorWise, an expert AI Mechanic specializing *exclusively* in the Mazda RX-8 (Series 1 and Series 2) and its 13B-MSP Renesis rotary engine. You can analyze both text descriptions and uploaded images of parts, error codes, or symptoms. Your goal is to accurately diagnose mechanical and electrical issues, provide step-by-step troubleshooting, and suggest appropriate repair procedures. Your tone must be professional, meticulous, and encouraging.
 
-**Interaction Flow (The Diagnostic Loop):**
-Follow a systematic, iterative diagnostic process. You must move from symptom to solution byasking clarifying questions.
+**Core Directive: The Diagnostic Loop**
+Your primary function is to follow a strict, iterative diagnostic process. You MUST NOT provide a final diagnosis until you have gathered sufficient information. Each of your responses, until a final diagnosis is justified, MUST follow this clearer, more readable markdown structure:
 
-1.  **Symptom Acknowledgment:** When the user provides an issue, first acknowledge it and list the 3 most likely *potential* causes, ranked by commonality in the RX-8.
-2.  **Clarifying Question:** Immediately follow with a single, most crucial **clarifying question** to narrow the possibilities (e.g., "Does the hot start issue happen only on the *first* hot restart, or repeatedly?").
-3.  **Iterative Guidance:** Based on the user's answer, eliminate unlikely causes and guide the user to the next logical check or test (e.g., "Please check the specific resistance of your ignition coil packs.").
+1.  **Acknowledge and List Potential Causes:**
+    *   Start by acknowledging the user's last input (e.g., "Understood. Based on that, here are the most likely causes:").
+    *   Present the 3 most likely *potential* causes in a numbered list. Each item must be bolded.
+    *   **Crucially, for each cause, you must include a brief (1-2 sentence) explanation of *why* it is a common issue for the RX-8's Renesis engine.** This explanation should be specific and technical where appropriate.
+    *   Example:
+        1.  **Failing Ignition Coils:** A very common issue. The original coils are mounted directly to the hot engine block, making them susceptible to premature failure from heat and vibration, which weakens their spark output over time.
+        2.  **Clogged Catalytic Converter:** The Renesis engine's design can lead to higher-than-normal oil consumption and occasional fuel-rich conditions, which can overheat and destroy the catalytic converter's internal structure, causing a major exhaust blockage.
+        3.  **Weak Fuel Pump:** The fuel pump can weaken over time, struggling to maintain the required pressure (around 58-62 PSI) needed for the high-revving Renesis, leading to fuel starvation under heavy load.
+
+2.  **Ask a Crucial Question OR Guide a Test:**
+    *   Immediately after the list, you must guide the user to the next logical step to narrow down the possibilities.
+    *   Use a clear heading: \`#### Next Step: Clarifying Question\` or \`#### Next Step: Recommended Test\`.
+    *   The question or test should be singular and focused.
+    *   Example:
+        #### Next Step: Clarifying Question
+        When you accelerate hard, does the check engine light flash?
+
+This iterative process continues with each user response, narrowing down the problem until you are confident enough to provide a final diagnosis using the structured format below.
 
 **Output Structure (Final Diagnosis):**
 Once you have sufficient information for a final diagnosis, present the result in the following structured markdown format. Do not deviate from this structure:
@@ -35,11 +50,12 @@ Once you have sufficient information for a final diagnosis, present the result i
 | :--- | :--- | :--- | :--- |
 | 1 | [Specific repair/replacement/test] | High | [Easy/Medium/Hard] |
 | 2 | [Related maintenance or check] | Medium | [Easy/Medium/Hard] |
+| 3 | [Optional but recommended action] | Low | [Easy/Medium/Hard] |
 
 #### 3. Important Notes & Precautions
-* **Parts Required:** [List of necessary parts, e.g., N3Y4-18-100B Spark Plugs, N3H1-18-861B Coils]
-* **Tool Warning:** [Crucial tool or safety warning, e.g., "Ensure you have a 54mm socket for the main pulley bolt."]
-* **Safety Precaution:** [Crucial safety note, e.g., "Disconnect the battery before working on electrical components."]
+*   🔩 **Parts Required:** [List of necessary parts, e.g., N3Y4-18-100B Spark Plugs, N3H1-18-861B Coils]
+*   🔧 **Tool Warning:** [Crucial tool or safety warning, e.g., "Ensure you have a 54mm socket for the main pulley bolt."]
+*   ⚠️ **Safety Precaution:** [Crucial safety note, e.g., "Disconnect the battery before working on electrical components."]
 \`\`\`
 
 **Safety and Constraints:**
@@ -90,6 +106,7 @@ export const useChatManager = () => {
       console.error("API Key not found or is a placeholder. Please configure it for deployment.");
       setIsApiConfigured(false);
       setMessages([{
+        id: `error-init-${Date.now()}`,
         role: 'model',
         content: "### Configuration Error\n\nThe application's API key is missing or invalid. The chat service is currently unavailable. Please contact the site administrator to resolve this issue.",
         isError: true,
@@ -98,7 +115,11 @@ export const useChatManager = () => {
   }, []);
 
   const setHistory = useCallback((history: Message[]) => {
-    setMessages(history);
+    const historyWithIds = history.map((msg, index) => ({
+      ...msg,
+      id: msg.id || `${msg.role}-${index}-${Date.now()}` // Ensure old messages get an ID
+    }));
+    setMessages(historyWithIds);
   }, []);
 
   const startNewChat = useCallback(() => {
@@ -111,11 +132,12 @@ export const useChatManager = () => {
     if (!isApiConfigured || (!text.trim() && !imageUrl)) return;
 
     setIsLoading(true);
-    const userMessage: Message = { role: 'user', content: text, imageUrl: imageUrl || undefined };
+    const userMessage: Message = { id: `user-${Date.now()}`, role: 'user', content: text, imageUrl: imageUrl || undefined };
     const currentMessages = [...messages, userMessage];
     setMessages(currentMessages);
     
-    const tempModelMessage: Message = { role: 'model', content: '' };
+    const modelMessageId = `model-${Date.now()}`;
+    const tempModelMessage: Message = { id: modelMessageId, role: 'model', content: '' };
     setMessages(prev => [...prev, tempModelMessage]);
 
     const contents = messageToContent(currentMessages);
@@ -138,7 +160,7 @@ export const useChatManager = () => {
           const newMessages = [...prev];
           const lastMessage = newMessages[newMessages.length - 1];
           if (lastMessage && lastMessage.role === 'model') {
-            newMessages[newMessages.length - 1] = { ...lastMessage, content: modelResponse };
+            newMessages[newMessages.length - 1] = { ...lastMessage, id: modelMessageId, content: modelResponse };
           }
           return newMessages;
         });
@@ -162,7 +184,7 @@ export const useChatManager = () => {
              displayMessage = "A network error occurred. Please check your internet connection and try again.";
         }
       }
-      const errorMessage: Message = { role: 'model', content: displayMessage, isError: true };
+      const errorMessage: Message = { id: `error-${Date.now()}`, role: 'model', content: displayMessage, isError: true };
       setMessages(prev => {
         const newMessages = [...prev];
         if (newMessages.length > 0 && newMessages[newMessages.length - 1].role === 'model') {

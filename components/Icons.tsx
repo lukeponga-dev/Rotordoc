@@ -2,7 +2,7 @@ import React from 'react';
 
 export const RotaryIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="currentColor" {...props}>
-        <path d="M50,3.2c-1.3,0-2.6,0.5-3.5,1.5l-42,42C3.6,47.6,3.2,48.8,3.2,50s0.5,2.4,1.5,3.4l42,42c1,1,2.2,1.5,3.5,1.5s2.6-0.5,3.5-1.5 l42-42c1-1,1.5-2.2,1.5-3.5s-0.5-2.6-1.5-3.5l-42-42C52.6,3.7,51.3,3.2,50,3.2z M50,10c1.1,0,2.1,0.4,2.8,1.2l39,39 c0.8,0.8,1.2,1.8,1.2,2.8s-0.4,2.1-1.2,2.8l-39,39c-0.8,0.8-1.8,1.2-2.8,1.2s-2.1-0.4-2.8-1.2l-39-39c-0.8-0.8-1.2-1.8-1.2-2.8 s0.4-2.1,1.2-2.8l39-39C47.9,10.4,48.9,10,50,10z"/>
+        <path d="M50,3.2c-1.3,0-2.6,0.5-3.5,1.5l-42,42C3.6,47.6,3.2,48.8,3.2,50s0.5,2.4,1.5,3.4l42,42c1,1,2.2,1.5,3.5,1.5s2.6-0.5,3.5-1.5 l42-42c1-1,1.5-2.2,1.5-3.5s-0.5-2.6-1.5-3.5l-42-42C52.6,3.7,51.3,3.2,50,3.2z M50,10c1.1,0,2.1,0.4,2.8,1.2l39,39 c0.8,0.8,1.2,1.8,1.2,2.8s-0.4,2.1-1.2,2.8l-39,39c-0.8,0.8-1.8,1.2-2.8,1.2s-2.1-0.4-2.8-1.2l-39-39c-0.8,0.8-1.2-1.8-1.2-2.8 s0.4-2.1,1.2-2.8l39-39C47.9,10.4,48.9,10,50,10z"/>
         <path d="M50,25c-13.8,0-25,11.2-25,25s11.2,25,25,25s25-11.2,25-25S63.8,25,50,25z M50,68c-9.9,0-18-8.1-18-18s8.1-18,18-18 s18,8.1,18,18S59.9,68,50,68z"/>
     </svg>
 );
@@ -85,5 +85,23 @@ export const PaperclipIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) =>
 export const MicrophoneIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 016 0v8.25a3 3 0 01-3 3z" />
+  </svg>
+);
+
+export const BookOpenIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+  </svg>
+);
+
+export const PlayIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...props}>
+    <path d="M8 5v14l11-7z" />
+  </svg>
+);
+
+export const StopIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...props}>
+    <path d="M6 6h12v12H6z" />
   </svg>
 );

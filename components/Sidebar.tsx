@@ -40,19 +40,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full w-64 bg-gray-900/90 backdrop-blur-md border-r border-gray-700/50 flex flex-col z-40 transition-transform transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 md:w-72 md:flex-shrink-0`}
+        className={`fixed top-0 left-0 h-full w-64 bg-slate-900/90 backdrop-blur-md border-r border-slate-700/50 flex flex-col z-40 transition-transform transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 md:w-72 md:flex-shrink-0`}
       >
-        <div className="flex items-center p-4 border-b border-gray-700/50">
-          <h2 className="text-lg font-semibold text-gray-200 flex-1">Chat History</h2>
+        <div className="flex items-center p-4 border-b border-slate-700/50">
+          <h2 className="text-lg font-semibold text-slate-200 flex-1">Chat History</h2>
           <button 
             onClick={onNewChat} 
             title="New Chat"
-            className="flex items-center space-x-2 px-3 py-2 bg-cyan-600/20 border border-cyan-700 rounded-md text-sm text-cyan-300 hover:bg-cyan-600/40 transition-colors"
+            className="flex items-center space-x-2 px-3 py-2 bg-indigo-600/20 border border-indigo-700 rounded-md text-sm text-indigo-300 hover:bg-indigo-600/40 transition-colors"
           >
             <PlusIcon className="w-5 h-5" />
             <span className="hidden sm:inline">New</span>
           </button>
-          <button onClick={onClose} className="p-1 text-gray-400 hover:text-white md:hidden ml-2">
+          <button onClick={onClose} className="p-1 text-slate-400 hover:text-white md:hidden ml-2">
             <CloseIcon className="w-6 h-6" />
           </button>
         </div>
@@ -65,8 +65,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onClick={() => onLoadSession(session.id)}
                   className={`w-full text-left flex items-center justify-between p-2 rounded-md text-sm transition-colors ${
                     activeSessionId === session.id
-                      ? 'bg-cyan-900/70 text-white'
-                      : 'text-gray-400 hover:bg-gray-800/60 hover:text-gray-200'
+                      ? 'bg-indigo-900/70 text-white'
+                      : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
                   }`}
                 >
                   <span className="truncate flex-1 pr-2">{session.name}</span>
@@ -77,7 +77,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         onDeleteSession(session.id);
                       }
                     }}
-                    className="p-1 text-gray-500 hover:text-red-400 rounded-full opacity-50 hover:opacity-100 transition-all"
+                    className="p-1 text-slate-500 hover:text-red-400 rounded-full opacity-50 hover:opacity-100 transition-all"
                     aria-label={`Delete session ${session.name}`}
                   >
                     <TrashIcon className="w-4 h-4" />
@@ -88,11 +88,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </ul>
         </nav>
         
-        <div className="p-4 border-t border-gray-700/50 space-y-2">
+        <div className="p-4 border-t border-slate-700/50 space-y-2">
           <button
             onClick={onSaveSession}
             disabled={messages.length === 0 || isLoading}
-            className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-sm text-gray-300 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-slate-700 border border-slate-600 rounded-md text-sm text-slate-300 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <SaveIcon className="w-5 h-5" />
             <span>Save Current Chat</span>
@@ -100,7 +100,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
            <button
             onClick={onExport}
             disabled={messages.length === 0 || isLoading}
-            className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-gray-700/50 border border-gray-600/50 rounded-md text-sm text-gray-400 hover:bg-gray-600/50 hover:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors sm:hidden"
+            className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-md text-sm text-slate-400 hover:bg-slate-600/50 hover:text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors sm:hidden"
           >
             <ExportIcon className="w-5 h-5" />
             <span>Export to PDF</span>
