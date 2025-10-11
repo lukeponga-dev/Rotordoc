@@ -6,8 +6,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     // This allows the server to be accessible from your network
-    host: '127.0.0.1', 
-    
+    host: '0.0.0.0', 
+   
     // This explicitly tells Vite to trust requests from your Render preview URL
     allowedHosts: [
       'rotordoc-1.onrender.com',
