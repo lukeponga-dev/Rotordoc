@@ -7,44 +7,43 @@ interface SuggestionPillsProps {
 
 const categorizedSuggestions = [
   {
-    category: 'Engine & Starting Issues',
+    category: 'Engine & Performance',
     suggestions: [
-      "Engine won't start when hot",
-      "Rough or unstable idle",
-      "Loss of power during acceleration",
-      "White smoke from exhaust",
+      "My RX-8 won't start when the engine is hot.",
+      "I have a rough or unstable idle.",
+      "I'm experiencing a significant loss of power when I accelerate.",
+      "My engine is misfiring, what should I check first?",
     ],
   },
   {
-    category: 'Warning Lights & Codes',
+    category: 'Warning Lights & Error Codes',
     suggestions: [
-      "Flashing check engine light",
-      "Low oil pressure light is on",
-      "P0301: Misfire on Rotor 1",
-      "What does the coolant light mean?",
-      "P0420: Catalyst efficiency error",
+      "My check engine light is flashing.",
+      "Why is my low oil pressure light on?",
+      "I have error code P0301, what does it mean?",
+      "What does the red coolant light mean?",
+      "Got a P0420 code, is my catalytic converter bad?",
     ],
   },
   {
-    category: 'Drivetrain & Suspension',
+    category: 'Maintenance & Fluids',
     suggestions: [
-      "Clunking noise from the rear",
-      "Grinding noise when shifting gears",
-      "Vibrations at high speed",
-      "Car pulls to one side",
+      "What type of oil should I use?",
+      "How do I check my ignition coils?",
+      "What is the recommended maintenance schedule?",
+      "My car is consuming too much oil.",
     ],
   },
   {
-    category: 'Electrical & Interior',
+    category: 'General Questions',
     suggestions: [
-        "Power steering feels heavy",
-        "A/C is not blowing cold",
-        "Dashboard warning lights explained",
-        "Radio or navigation system issues"
+        "What are the most common issues with the Renesis engine?",
+        "Explain the ignition system (coils, plugs, wires).",
+        "What should I look for when buying a used RX-8?",
+        "Tell me about engine flooding and how to prevent it."
     ],
   },
 ];
-
 
 export const SuggestionPills: React.FC<SuggestionPillsProps> = ({ onSuggestionClick }) => {
   return (
@@ -56,7 +55,7 @@ export const SuggestionPills: React.FC<SuggestionPillsProps> = ({ onSuggestionCl
         <div className="w-full max-w-3xl mx-auto space-y-5">
             {categorizedSuggestions.map(({ category, suggestions }) => (
                 <div key={category} className="text-left bg-slate-900/50 p-4 rounded-lg border border-slate-700/50">
-                    <h3 className="text-base font-semibold text-indigo-400 mb-3 px-1">{category}</h3>
+                    <h3 className="text-base font-semibold text-cyan-400 mb-3 px-1">{category}</h3>
                     <div className="flex flex-wrap gap-2 sm:gap-3">
                         {suggestions.map((text) => (
                             <button

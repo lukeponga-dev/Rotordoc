@@ -211,7 +211,7 @@ const App: React.FC = () => {
                     <MenuIcon className="w-6 h-6" />
                   </button>
                 <div className="flex items-center space-x-2 sm:space-x-3">
-                    <RotorWiseIcon className="w-8 h-8 sm:w-10 sm:h-10 text-indigo-400" />
+                    <RotorWiseIcon className="w-8 h-8 sm:w-10 sm:h-10 text-cyan-400" />
                     <div>
                         <h1 className="text-lg sm:text-xl font-bold text-slate-200">RotorWise</h1>
                         <p className="text-xs sm:text-sm text-slate-400">Your RX-8 AI Mechanic</p>
@@ -238,7 +238,7 @@ const App: React.FC = () => {
               </div>
             </header>
 
-            <div className="h-0.5 w-full bg-indigo-900/50 relative">
+            <div className="h-0.5 w-full bg-cyan-900/50 relative">
               {isLoading && <div className="absolute inset-0 w-full h-full loading-bar-shimmer" />}
             </div>
 
@@ -276,9 +276,9 @@ const App: React.FC = () => {
                     </button>
                   </div>
                 )}
-                <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex items-center space-x-2 sm:space-x-3 bg-slate-800 rounded-lg border border-slate-700 focus-within:ring-2 focus-within:ring-indigo-500 transition-shadow">
+                <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex items-center space-x-2 sm:space-x-3 bg-slate-800 rounded-lg border border-slate-700 focus-within:ring-2 focus-within:ring-cyan-500 transition-shadow">
                   <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
-                  <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isLoading} className="p-2 text-indigo-400 hover:text-indigo-300 disabled:text-slate-600 disabled:cursor-not-allowed transition-colors">
+                  <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isLoading} className="p-2 text-cyan-400 hover:text-cyan-300 disabled:text-slate-600 disabled:cursor-not-allowed transition-colors">
                     <PaperclipIcon className="w-6 h-6" />
                   </button>
                   <input
@@ -289,15 +289,15 @@ const App: React.FC = () => {
                     className="flex-1 w-full bg-transparent p-3 text-sm sm:text-base text-slate-200 placeholder-slate-500 focus:outline-none"
                     disabled={isLoading}
                   />
-                  <button type="button" onClick={toggleListening} disabled={isLoading} className="p-2 hover:text-indigo-300 disabled:text-slate-600 disabled:cursor-not-allowed transition-colors">
-                     <MicrophoneIcon className={`w-6 h-6 ${isListening ? 'text-red-500 animate-pulse' : 'text-indigo-400'}`} />
+                  <button type="button" onClick={toggleListening} disabled={isLoading} className="p-2 hover:text-cyan-300 disabled:text-slate-600 disabled:cursor-not-allowed transition-colors">
+                     <MicrophoneIcon className={`w-6 h-6 ${isListening ? 'text-red-500 animate-pulse' : 'text-cyan-400'}`} />
                   </button>
                   <button
                     type="submit"
                     disabled={isLoading || (!input.trim() && !image)}
-                    className="p-2 sm:p-3 text-indigo-400 disabled:text-slate-600 disabled:cursor-not-allowed hover:text-indigo-300 transition-colors"
+                    className="p-2 sm:p-3 text-cyan-400 disabled:text-slate-600 disabled:cursor-not-allowed hover:text-cyan-300 transition-colors"
                   >
-                    {isLoading ? <div className="w-6 h-6 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin"></div> : <SendIcon className="w-6 h-6" />}
+                    {isLoading ? <div className="w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div> : <SendIcon className="w-6 h-6" />}
                   </button>
                 </form>
               </div>
