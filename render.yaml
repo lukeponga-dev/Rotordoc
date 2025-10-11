@@ -2,11 +2,12 @@
 # This file configures the deployment of the RotorWise AI application on Render.
 
 services:
-  - type: static_site # Corrected service type for a static site.
-    name: rotorwise-ai # A name for the service.
-    # The build command finds the placeholder __GEMINI_API_KEY__ in index.html
-    # and replaces it with the actual API_KEY from the environment variables.
-    buildCommand: "sed -i 's|__GEMINI_API_KEY__|'\"$API_KEY\"'|g' index.html"
+  
+    name: rotorwise-ai
+    # The build command uses Node.js to find the placeholder __GEMINI_API_KEY__ in index.html
+    # and replace it with the actual API_KEY from the environment variables.
+    # This is more robust than using 'sed' as it handles special characters correctly.
+    buildCommand: "node -e \"let f = 'index.html'; require('fs').writeFileSync(f, require('fs').readFileSync(f, 'utf8').replace('__GEMINI_API_KEY__', process.env.API_KEY))\""
     # The root directory contains index.html and all other static assets to be served.
     publishDir: "."
     envVars:
