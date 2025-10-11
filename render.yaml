@@ -1,21 +1,17 @@
-# render.yaml
-# This file configures the deployment of the RotorWise AI application on Render.
+# RotorWise AI Deployment Configuration for Render
 
 services:
-  
-    
-  
-    # The build command uses Node.js to find the placeholder __GEMINI_API_KEY__ in index.html
-    # and replace it with the actual API_KEY from the environment variables.
-    # This is more robust than using 'sed' as it handles special characters correctly.
-    buildCommand: "node -e \"let f = 'index.html'; require('fs').writeFileSync(f, require('fs').readFileSync(f, 'utf8').replace('__GEMINI_API_KEY__', process.env.API_KEY))\"AIzaSyDHGAVUyNST8vsAjo5bt-G5NpkQUvbnkDg"
-    # The root directory contains index.html and all other static assets to be served.
+  - type: web
+    name: rotorwise-ai
+    env: static
+    buildCommand: >
+      node -e "let f = 'index.html'; require('fs').writeFileSync(f, require('fs').readFileSync(f, 'utf8').replace('__GEMINI_API_KEY__', process.env.API_KEY))"
     publishDir: "."
     envVars:
-      # IMPORTANT: You must set the API_KEY in the Render dashboard under Environment.
       - key: API_KEY
+        sync: false  # Set manually in Render dashboard
+
     headers:
-      # Prevents aggressive caching to ensure users get the latest version of the app.
       - path: "/*"
         name: "Cache-Control"
         value: "no-cache, no-store, must-revalidate"
