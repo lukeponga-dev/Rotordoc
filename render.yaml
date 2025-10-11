@@ -3,7 +3,8 @@
 
 services:
   
-    name: rotorwise-ai
+    
+  
     # The build command uses Node.js to find the placeholder __GEMINI_API_KEY__ in index.html
     # and replace it with the actual API_KEY from the environment variables.
     # This is more robust than using 'sed' as it handles special characters correctly.
