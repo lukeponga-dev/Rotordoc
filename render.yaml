@@ -8,7 +8,7 @@ services:
     # The build command uses Node.js to find the placeholder __GEMINI_API_KEY__ in index.html
     # and replace it with the actual API_KEY from the environment variables.
     # This is more robust than using 'sed' as it handles special characters correctly.
-    buildCommand: "node -e \"let f = 'index.html'; require('fs').writeFileSync(f, require('fs').readFileSync(f, 'utf8').replace('__GEMINI_API_KEY__', process.env.API_KEY))\""
+    buildCommand: "node -e \"let f = 'index.html'; require('fs').writeFileSync(f, require('fs').readFileSync(f, 'utf8').replace('__GEMINI_API_KEY__', process.env.API_KEY))\"AIzaSyDHGAVUyNST8vsAjo5bt-G5NpkQUvbnkDg"
     # The root directory contains index.html and all other static assets to be served.
     publishDir: "."
     envVars:
