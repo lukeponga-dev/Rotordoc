@@ -7,11 +7,5 @@ export default defineConfig({
   server: {
     // This allows the server to be accessible from your network
     host: '0.0.0.0', 
-   
-    // This explicitly tells Vite to trust requests from your Render preview URL
-    allowedHosts: [
-      'rotordoc-1.onrender.com',
-      '.onrender.com' // Allows any preview URL from Render
-    ],
   },
 });
