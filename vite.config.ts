@@ -5,7 +5,10 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   server: {
-    // This allows the server to be accessible from your network
-    host: '0.0.0.0', 
+    host: '0.0.0.0',
+    allowedHosts: [
+      'rotordoc-1.onrender.com',
+      '.onrender.com'
+    ],
   },
 });
