@@ -1,4 +1,7 @@
+[LIVE](https://car-diagnosis-app1.web.app/)
+
 # RotorWise AI - Your RX-8 AI Mechanic
+
 
 RotorWise AI is a specialized diagnostic assistant built for Mazda RX-8 owners and enthusiasts. Powered by the Google Gemini API, it leverages expert knowledge grounded in official workshop manuals to help you troubleshoot, diagnose, and understand your Renesis rotary engine.
 
