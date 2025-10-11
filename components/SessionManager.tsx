@@ -84,24 +84,52 @@ const messageToContent = (messages: Message[]) => {
   }).filter(c => c.parts.length > 0);
 };
 
+// Helper function to generate user-friendly error messages
+const getDisplayErrorMessage = (error: unknown): string => {
+  const defaultMessage = "Sorry, I'm having trouble connecting. Please try again later.";
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    const errorMessage = (error as Error).message.toLowerCase();
+
+    if (!navigator.onLine) {
+      return "You appear to be offline. Please check your internet connection.";
+    }
+    if (errorMessage.includes('api key not valid') || errorMessage.includes('not authorized')) {
+      return "There's an issue with the API configuration. Please contact the administrator. (Error: Not Authorized)";
+    }
+    if (errorMessage.includes('rate limit') || errorMessage.includes('retry limit exceeded')) {
+      return "The AI is currently busy due to high traffic. Please wait a moment before trying again. (Error: Rate Limit Exceeded)";
+    }
+    if (errorMessage.includes('400')) {
+      return "The request was invalid, which may be a bug. Please try rephrasing your message. (Error: Bad Request)";
+    }
+    if (errorMessage.includes('500') || errorMessage.includes('internal')) {
+      return "The AI service is experiencing a temporary issue. Please try again in a few moments. (Error: Internal Server Error)";
+    }
+    if (errorMessage.includes('fetch') || errorMessage.includes('network')) {
+      return "A network error occurred. Please check your internet connection and try again.";
+    }
+  }
+  return defaultMessage;
+};
+
 export const useChatManager = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isApiConfigured, setIsApiConfigured] = useState(false);
+  const [isApiConfigured, setIsApiConfigured] = useState(true);
   const aiRef = useRef<GoogleGenAI | null>(null);
 
   useEffect(() => {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (apiKey && apiKey !== '__GEMINI_API_KEY__') {
+    if (apiKey && apiKey !== '__GEMINI_API_KEY__' && apiKey.trim() !== '') {
       aiRef.current = new GoogleGenAI({ apiKey });
       setIsApiConfigured(true);
     } else {
-      console.error("API Key not found or is a placeholder. Please configure it for deployment.");
+      console.error("API Key not found or is invalid. Please configure it.");
       setIsApiConfigured(false);
       setMessages([{
         id: `error-init-${Date.now()}`,
         role: 'model',
-        content: "### Configuration Error\n\nThe application's API key is missing or invalid. The chat service is currently unavailable. Please contact the site administrator to resolve this issue.",
+        content: "### Configuration Error\n\nThe application's API key is missing or invalid. The chat service is unavailable. Please contact the site administrator.",
         isError: true,
       }]);
     }
@@ -110,13 +138,12 @@ export const useChatManager = () => {
   const setHistory = useCallback((history: Message[]) => {
     const historyWithIds = history.map((msg, index) => ({
       ...msg,
-      id: msg.id || `${msg.role}-${index}-${Date.now()}` // Ensure old messages get an ID
+      id: msg.id || `${msg.role}-${index}-${Date.now()}`
     }));
     setMessages(historyWithIds);
   }, []);
 
   const startNewChat = useCallback(() => {
-    // Do not clear the error message if the API is not configured.
     if (!isApiConfigured) return;
     setMessages([]);
   }, [isApiConfigured]);
@@ -130,63 +157,34 @@ export const useChatManager = () => {
     setMessages(currentMessages);
     
     const modelMessageId = `model-${Date.now()}`;
-    const tempModelMessage: Message = { id: modelMessageId, role: 'model', content: '' };
-    setMessages(prev => [...prev, tempModelMessage]);
+    setMessages(prev => [...prev, { id: modelMessageId, role: 'model', content: '' }]);
 
     const contents = messageToContent(currentMessages);
 
     try {
-      if (!aiRef.current) {
-        throw new Error("Gemini AI client is not initialized.");
-      }
+      if (!aiRef.current) throw new Error("Gemini AI client is not initialized.");
 
       const responseStream = await aiRef.current.models.generateContentStream({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-1.5-flash',
         contents,
-        config: { systemInstruction },
+        systemInstruction: systemInstruction,
       });
 
       let modelResponse = '';
       for await (const chunk of responseStream) {
         modelResponse += chunk.text;
-        setMessages(prev => {
-          const newMessages = [...prev];
-          const lastMessage = newMessages[newMessages.length - 1];
-          if (lastMessage && lastMessage.role === 'model') {
-            newMessages[newMessages.length - 1] = { ...lastMessage, id: modelMessageId, content: modelResponse };
-          }
-          return newMessages;
-        });
+        setMessages(prev => prev.map(msg => 
+          msg.id === modelMessageId ? { ...msg, content: modelResponse } : msg
+        ));
       }
+
     } catch (error) {
       console.error("Error sending message:", error);
-      let displayMessage = "Sorry, I'm having trouble connecting. Please try again later.";
-      if (error && typeof error === 'object') {
-        const errorMessage = ((error as Error).message || '').toLowerCase();
-        if (!navigator.onLine) {
-            displayMessage = "You appear to be offline. Please check your internet connection.";
-        } else if (errorMessage.includes('api key not valid')) {
-            displayMessage = "There's an issue with the API configuration. Please ensure the API key is valid.";
-        } else if (errorMessage.includes('rate limit')) {
-            displayMessage = "The AI is currently busy due to high traffic. Please wait a moment before trying again.";
-        } else if (errorMessage.includes('400')) {
-             displayMessage = "The request was invalid, which may be a bug. Please try rephrasing your message.";
-        } else if (errorMessage.includes('500') || errorMessage.includes('internal')) {
-             displayMessage = "The AI service is experiencing a temporary issue. Please try again in a few moments.";
-        } else if (errorMessage.includes('fetch') || errorMessage.includes('network')) {
-             displayMessage = "A network error occurred. Please check your internet connection and try again.";
-        }
-      }
+      const displayMessage = getDisplayErrorMessage(error);
       const errorMessage: Message = { id: `error-${Date.now()}`, role: 'model', content: displayMessage, isError: true };
-      setMessages(prev => {
-        const newMessages = [...prev];
-        if (newMessages.length > 0 && newMessages[newMessages.length - 1].role === 'model') {
-          newMessages[newMessages.length - 1] = errorMessage;
-        } else {
-          newMessages.push(errorMessage);
-        }
-        return newMessages;
-      });
+      
+      setMessages(prev => prev.filter(msg => msg.id !== modelMessageId).concat(errorMessage));
+
     } finally {
       setIsLoading(false);
     }
