@@ -3,5 +3,5 @@
     "deploymentHostingUrl": "https://car-diagnosis-app1.web.app"
   },
   "cloud_run_deploy": {},
-  "gemini_api": {"AIzaSyBxJ7H_zXQSQEouOhrW40RhxqDtae6Dhyk"}
+  "gemini_api": {}
 }

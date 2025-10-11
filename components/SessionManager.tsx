@@ -3,13 +3,6 @@ import { GoogleGenAI } from '@google/genai';
 import { Message } from '../types';
 import { TROUBLESHOOTING_DATA } from '../data/troubleshootingData';
 
-// Extend the window interface for the API key
-declare global {
-  interface Window {
-    GEMINI_API_KEY: string;
-  }
-}
-
 const systemInstruction = `
 **Persona and Expertise:**
 You are RotorWise, an expert AI Mechanic specializing *exclusively* in the Mazda RX-8 (Series 1 and Series 2) and its 13B-MSP Renesis rotary engine. You can analyze both text descriptions and uploaded images of parts, error codes, or symptoms. Your goal is to accurately diagnose mechanical and electrical issues, provide step-by-step troubleshooting, and suggest appropriate repair procedures. Your tone must be professional, meticulous, and encouraging.
@@ -98,7 +91,7 @@ export const useChatManager = () => {
   const aiRef = useRef<GoogleGenAI | null>(null);
 
   useEffect(() => {
-    const apiKey = window.GEMINI_API_KEY;
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     if (apiKey && apiKey !== '__GEMINI_API_KEY__') {
       aiRef.current = new GoogleGenAI({ apiKey });
       setIsApiConfigured(true);
