@@ -5,7 +5,7 @@ import { SuggestionPills } from './components/SuggestionPills';
 import { SendIcon, ExportIcon, RotorWiseIcon, MenuIcon, PaperclipIcon, MicrophoneIcon, CloseIcon, BookOpenIcon } from './components/Icons';
 import { Sidebar } from './components/Sidebar';
 import { exportToPDF } from './utils/export';
-import { Session, Message } from './types';
+import { Session } from './types';
 import { WorkshopGuide } from './components/WorkshopGuide';
 import { useTextToSpeech } from './hooks/useTextToSpeech';
 
@@ -111,6 +111,7 @@ const App: React.FC = () => {
     startNewChat();
     setActiveSessionId(null);
     setIsSidebarOpen(false);
+    setCurrentView('chat');
   };
 
   const saveSession = () => {
@@ -144,6 +145,7 @@ const App: React.FC = () => {
       setActiveSessionId(sessionId);
     }
     setIsSidebarOpen(false);
+    setCurrentView('chat');
   };
   
   const deleteSession = (sessionId: string) => {
@@ -179,11 +181,10 @@ const App: React.FC = () => {
     ? "Listening..." 
     : image 
     ? "Describe the attached image or ask a question..." 
-    : "Describe your RX-8 issue...";
+    : "Describe your RX-8 issue, e.g., 'rough idle when warm'...";
 
   return (
-    <div className="flex h-screen bg-transparent text-white font-sans">
-      {currentView === 'chat' && (
+    <div className="flex h-screen bg-transparent text-[var(--text-primary)] font-sans">
         <Sidebar
           sessions={sessions}
           activeSessionId={activeSessionId}
@@ -197,32 +198,31 @@ const App: React.FC = () => {
           onSaveSession={saveSession}
           onExport={handleExport}
         />
-      )}
 
       {currentView === 'guide' ? (
         <WorkshopGuide onClose={() => setCurrentView('chat')} />
       ) : (
         <div className="flex flex-col flex-1 h-full">
-          <div className="flex flex-col max-w-4xl w-full mx-auto h-full bg-slate-900/80 backdrop-blur-sm sm:rounded-lg border-x-0 sm:border-x border-y border-slate-700/50 shadow-2xl">
+          <div className="flex flex-col max-w-4xl w-full mx-auto h-full bg-[var(--surface-1)]/80 backdrop-blur-md sm:rounded-lg border-x-0 sm:border-x border-y border-[var(--surface-border)] shadow-2xl shadow-black/40">
             {/* Header */}
-            <header className="flex items-center justify-between p-3 sm:p-4 border-b border-slate-700/50 shadow-md">
+            <header className="flex items-center justify-between p-3 sm:p-4 border-b border-[var(--surface-border)] shadow-md shrink-0">
               <div className="flex items-center">
                  <button onClick={() => setIsSidebarOpen(true)} className="p-1 text-slate-400 hover:text-white md:hidden mr-2 sm:mr-3">
                     <MenuIcon className="w-6 h-6" />
                   </button>
                 <div className="flex items-center space-x-2 sm:space-x-3">
-                    <RotorWiseIcon className="w-8 h-8 sm:w-10 sm:h-10 text-cyan-400" />
+                    <RotorWiseIcon className="w-8 h-8 sm:w-10 sm:h-10 text-[var(--accent-primary)]" />
                     <div>
-                        <h1 className="text-lg sm:text-xl font-bold text-slate-200">RotorWise</h1>
+                        <h1 className="text-lg sm:text-xl font-bold font-display text-slate-200 tracking-wide">RotorWise AI</h1>
                         <p className="text-xs sm:text-sm text-slate-400">Your RX-8 AI Mechanic</p>
                     </div>
                 </div>
               </div>
               
-              <div className="hidden sm:flex items-center space-x-2">
+              <div className="flex items-center space-x-2">
                  <button
                   onClick={() => setCurrentView('guide')}
-                  className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-slate-700 border border-slate-600 rounded-md text-sm text-slate-300 hover:bg-slate-600 transition-colors"
+                  className="hidden sm:flex items-center space-x-2 px-3 sm:px-4 py-2 bg-slate-800/70 border border-[var(--surface-border)] rounded-md text-sm text-slate-300 hover:bg-slate-700/80 hover:border-slate-600 transition-colors"
                 >
                   <BookOpenIcon className="w-5 h-5" />
                   <span className="hidden sm:inline">Guide</span>
@@ -230,7 +230,7 @@ const App: React.FC = () => {
                 <button
                   onClick={handleExport}
                   disabled={messages.length === 0 || isLoading}
-                  className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-slate-700 border border-slate-600 rounded-md text-sm text-slate-300 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="hidden sm:flex items-center space-x-2 px-3 sm:px-4 py-2 bg-slate-800/70 border border-[var(--surface-border)] rounded-md text-sm text-slate-300 hover:bg-slate-700/80 hover:border-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <ExportIcon className="w-5 h-5" />
                   <span className="hidden sm:inline">Export</span>
@@ -238,12 +238,8 @@ const App: React.FC = () => {
               </div>
             </header>
 
-            <div className="h-0.5 w-full bg-cyan-900/50 relative">
-              {isLoading && <div className="absolute inset-0 w-full h-full loading-bar-shimmer" />}
-            </div>
-
-            <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 custom-scrollbar">
-              {messages.length === 0 ? (
+            <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 sm:space-y-8 custom-scrollbar">
+              {messages.length === 0 && !isLoading ? (
                 <SuggestionPills onSuggestionClick={handleSuggestionClick} />
               ) : (
                 messages.map((msg) => (
@@ -259,45 +255,51 @@ const App: React.FC = () => {
               <div ref={chatEndRef} />
             </main>
 
-            <footer className="p-2 sm:p-4 border-t border-slate-700/50">
+            <footer className="p-3 sm:p-4 border-t border-[var(--surface-border)] shrink-0">
               <div className="max-w-3xl mx-auto">
                 {image && (
                   <div className="relative inline-block mb-2 ml-2">
-                    <img src={image} alt="Upload preview" className="w-20 h-20 object-cover rounded-md border border-slate-600" />
+                    <img src={image} alt="Upload preview" className="w-20 h-20 object-cover rounded-md border-2 border-[var(--surface-border)]" />
                     <button
                       onClick={() => {
                         setImage(null);
                         if (fileInputRef.current) fileInputRef.current.value = '';
                       }}
-                      className="absolute -top-2 -right-2 bg-slate-700 text-white rounded-full p-1 border border-slate-500 hover:bg-red-500 transition-colors"
+                      className="absolute -top-2 -right-2 bg-slate-800 text-white rounded-full p-1 border-2 border-slate-600 hover:bg-red-500 transition-colors"
                       aria-label="Remove image"
                     >
                       <CloseIcon className="w-4 h-4" />
                     </button>
                   </div>
                 )}
-                <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex items-center space-x-2 sm:space-x-3 bg-slate-800 rounded-lg border border-slate-700 focus-within:ring-2 focus-within:ring-cyan-500 transition-shadow">
+                <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex items-center space-x-2 sm:space-x-3 bg-slate-800/80 rounded-xl border border-[var(--surface-border)] focus-within:ring-2 focus-within:ring-[var(--accent-primary)] transition-shadow p-1">
                   <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
-                  <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isLoading} className="p-2 text-cyan-400 hover:text-cyan-300 disabled:text-slate-600 disabled:cursor-not-allowed transition-colors">
+                  <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isLoading} className="p-2 text-[var(--text-secondary)] hover:text-[var(--accent-secondary)] disabled:text-slate-600 disabled:cursor-not-allowed transition-colors rounded-full">
                     <PaperclipIcon className="w-6 h-6" />
                   </button>
                   <input
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                     placeholder={placeholderText}
-                    className="flex-1 w-full bg-transparent p-3 text-sm sm:text-base text-slate-200 placeholder-slate-500 focus:outline-none"
+                    className="flex-1 w-full bg-transparent p-2 text-sm sm:text-base text-slate-200 placeholder-slate-500 focus:outline-none"
                     disabled={isLoading}
+                    rows={1}
                   />
-                  <button type="button" onClick={toggleListening} disabled={isLoading} className="p-2 hover:text-cyan-300 disabled:text-slate-600 disabled:cursor-not-allowed transition-colors">
-                     <MicrophoneIcon className={`w-6 h-6 ${isListening ? 'text-red-500 animate-pulse' : 'text-cyan-400'}`} />
-                  </button>
+                  <div className="relative flex items-center">
+                    <button type="button" onClick={toggleListening} disabled={isLoading} className="p-2 text-[var(--text-secondary)] hover:text-[var(--accent-secondary)] disabled:text-slate-600 disabled:cursor-not-allowed transition-colors rounded-full">
+                       <MicrophoneIcon className={`w-6 h-6 ${isListening ? 'text-[var(--accent-primary)]' : ''}`} />
+                    </button>
+                    {isListening && <div className="absolute inset-0 pulse-ring-animation" aria-hidden="true"></div>}
+                  </div>
                   <button
                     type="submit"
                     disabled={isLoading || (!input.trim() && !image)}
-                    className="p-2 sm:p-3 text-cyan-400 disabled:text-slate-600 disabled:cursor-not-allowed hover:text-cyan-300 transition-colors"
+                    className="p-3 bg-[var(--accent-primary)] text-white rounded-lg disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed hover:bg-orange-500 transition-colors"
+                    aria-label="Send message"
                   >
-                    {isLoading ? <div className="w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div> : <SendIcon className="w-6 h-6" />}
+                    {isLoading ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <SendIcon className="w-6 h-6" />}
                   </button>
                 </form>
               </div>

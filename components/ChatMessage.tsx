@@ -12,12 +12,12 @@ interface ChatMessageProps {
   speakingMessageId: string | null;
 }
 
-// A skeleton loader to show while the model is generating a response.
+// A typing indicator to show while the model is generating a response.
 const ModelResponseLoader: React.FC = () => (
-  <div className="space-y-3 animate-pulse p-1">
-    <div className="h-3 bg-slate-600 rounded-full w-5/6"></div>
-    <div className="h-3 bg-slate-600 rounded-full w-full"></div>
-    <div className="h-3 bg-slate-600 rounded-full w-4/6"></div>
+  <div className="flex items-center space-x-2 p-2">
+    <div className="w-2 h-2 bg-slate-500 rounded-full animate-typing-dot" style={{ animationDelay: '0s' }}></div>
+    <div className="w-2 h-2 bg-slate-500 rounded-full animate-typing-dot" style={{ animationDelay: '0.2s' }}></div>
+    <div className="w-2 h-2 bg-slate-500 rounded-full animate-typing-dot" style={{ animationDelay: '0.4s' }}></div>
   </div>
 );
 
@@ -29,7 +29,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSpeak, onCa
     if (isThisMessageSpeaking) {
       onCancelSpeak();
     } else {
-      // Strip markdown and special characters for cleaner speech synthesis
+      // Strip markdown for cleaner speech
       const cleanText = message.content
         .replace(/### |#### |✅|\||---|\*|`|🔩|🔧|⚠️/g, '')
         .replace(/(\r\n|\n|\r)/gm, " ");
@@ -38,39 +38,19 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSpeak, onCa
   };
 
   const renderModelContent = () => {
-    // If there's content, render it as Markdown.
-    if (message.content) {
-      return (
-        <>
-          <div className="prose prose-invert prose-sm max-w-none prose-p:text-slate-200 prose-li:text-slate-200 prose-headings:text-cyan-400">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {message.content}
-            </ReactMarkdown>
-          </div>
-           {message.content && !message.isError && (
-              <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-700/50">
-                <Feedback />
-                <button 
-                    onClick={handleToggleSpeech} 
-                    className="p-1 text-slate-400 hover:text-cyan-400 transition-colors"
-                    title={isThisMessageSpeaking ? "Stop speaking" : "Read aloud"}
-                >
-                    {isThisMessageSpeaking 
-                        ? <StopIcon className="w-5 h-5 text-cyan-400" />
-                        : <PlayIcon className="w-5 h-5" />
-                    }
-                </button>
-              </div>
-            )}
-        </>
-      );
-    }
-    // If there's no content and it's not an error message, show the skeleton loader.
-    if (!message.isError) {
+    // If there's no content and it's not an error message, show the typing indicator.
+    if (!message.content && !message.isError) {
       return <ModelResponseLoader />;
     }
-    // Otherwise, render nothing (for empty error states).
-    return null;
+    
+    // If there is content, render it as Markdown.
+    return (
+      <div className="prose prose-invert prose-sm max-w-none prose-p:text-slate-200 prose-li:text-slate-200">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          {message.content}
+        </ReactMarkdown>
+      </div>
+    );
   };
 
   const renderUserContent = () => {
@@ -80,7 +60,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSpeak, onCa
             <img 
                 src={message.imageUrl} 
                 alt="User upload" 
-                className="rounded-lg max-w-xs max-h-64 object-contain border border-cyan-800/50"
+                className="rounded-lg max-w-xs max-h-64 object-contain border border-indigo-900/50"
             />
         )}
         {message.content && <p className="text-slate-100 text-sm sm:text-base">{message.content}</p>}
@@ -89,12 +69,28 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSpeak, onCa
   };
 
   return (
-    <div className={`flex items-start space-x-3 sm:space-x-4 chat-message-container ${isModel ? '' : 'flex-row-reverse space-x-reverse'}`}>
-      <div className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shadow-md ${isModel ? 'bg-slate-700 border border-slate-600/50' : 'bg-cyan-600 border border-cyan-500/50'}`}>
-        {isModel ? <RotorWiseIcon className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" /> : <UserIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />}
+    <div className={`flex items-start space-x-3 sm:space-x-4 chat-message-container group ${isModel ? '' : 'flex-row-reverse space-x-reverse'}`}>
+      <div className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shadow-md border ${isModel ? 'bg-slate-800 border-slate-700' : 'bg-indigo-600 border-indigo-500'}`}>
+        {isModel ? <RotorWiseIcon className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--accent-primary)]" /> : <UserIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />}
       </div>
-      <div className={`max-w-2xl w-full rounded-xl px-3 py-2 sm:px-4 sm:py-3 shadow-lg ${isModel ? 'bg-slate-800/70 border border-slate-700/60' : 'bg-gradient-to-br from-cyan-700 to-blue-800 border border-cyan-700/50'}`}>
+      <div className={`relative max-w-2xl w-full rounded-xl px-3 py-2 sm:px-4 sm:py-3 shadow-lg border ${isModel ? 'bg-slate-800/70 border-[var(--surface-border)]' : 'bg-gradient-to-br from-indigo-700 to-blue-800 border-indigo-700/50'}`}>
         {isModel ? renderModelContent() : renderUserContent()}
+        
+        {isModel && message.content && !message.isError && (
+            <div className="absolute -top-4 right-0 flex items-center space-x-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <button 
+                    onClick={handleToggleSpeech} 
+                    className="p-1.5 bg-slate-700/80 backdrop-blur-sm rounded-full text-slate-400 hover:text-[var(--accent-secondary)] hover:bg-slate-600/80 transition-colors"
+                    title={isThisMessageSpeaking ? "Stop speaking" : "Read aloud"}
+                >
+                    {isThisMessageSpeaking 
+                        ? <StopIcon className="w-4 h-4 text-[var(--accent-secondary)]" />
+                        : <PlayIcon className="w-4 h-4" />
+                    }
+                </button>
+                <Feedback />
+            </div>
+        )}
       </div>
     </div>
   );

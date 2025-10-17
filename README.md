@@ -1,7 +1,4 @@
-[LIVE](https://car-diagnosis-app1.web.app/)
-
 # RotorWise AI - Your RX-8 AI Mechanic
-
 
 RotorWise AI is a specialized diagnostic assistant built for Mazda RX-8 owners and enthusiasts. Powered by the Google Gemini API, it leverages expert knowledge grounded in official workshop manuals to help you troubleshoot, diagnose, and understand your Renesis rotary engine.
 
@@ -43,7 +40,7 @@ This project is configured to run without a build step. You just need a way to s
 
 The application requires a Google Gemini API key to function. This key must be available to the application in the execution environment.
 
-- **API Key**: The application is hardcoded to look for the API key in `import.meta.env.VITE_GEMINI_API_KEY`. Your serving environment must make this variable accessible to the client-side code.
+- **API Key**: The application is hardcoded to look for the API key in `process.env.API_KEY`. Your serving environment must make this variable accessible to the client-side code.
 
 ### Running the Application
 
@@ -53,7 +50,7 @@ The application requires a Google Gemini API key to function. This key must be a
     cd <repository-directory>
     ```
 2.  **Set up the API Key:**
-    Ensure your local server or deployment environment injects the `VITE_GEMINI_API_KEY`.
+    Ensure your local server or deployment environment injects the `API_KEY`.
 
 3.  **Serve the project root:**
     Start your local web server from the root directory of the project (the one containing `index.html`).

@@ -1,7 +1,0 @@
-{
-  "firebase_hosting": {
-    "deploymentHostingUrl": "https://car-diagnosis-app1.web.app"
-  },
-  "cloud_run_deploy": {},
-  "gemini_api": {}
-}
