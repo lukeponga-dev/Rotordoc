@@ -1,6 +1,6 @@
 
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { Message } from '../types';
 import { TROUBLESHOOTING_DATA } from '../data/troubleshootingData';
@@ -122,7 +122,7 @@ const getDisplayErrorMessage = (error: unknown): string => {
     const errorMessage = ((error as Error).message || '').toLowerCase();
 
     if (errorMessage.includes('api key not valid')) {
-      return "The API key provided is invalid. Please open Settings, correct the key, and try again.";
+      return "The configured API key is invalid. Please contact the application administrator.";
     }
     if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
       return "The AI is currently busy due to high traffic. Please wait a moment before trying again.";
@@ -144,34 +144,35 @@ const getDisplayErrorMessage = (error: unknown): string => {
   return "An unexpected error occurred. Please check the developer console for more details and try again later.";
 };
 
-export const useChatManager = (apiKey: string | null) => {
+export const useChatManager = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingState, setLoadingState] = useState<'idle' | 'processing' | 'streaming'>('idle');
-  const aiRef = useRef<GoogleGenAI | null>(null);
+  const [initError, setInitError] = useState<string | null>(null);
+
+  const ai = useMemo(() => {
+    try {
+      // The API_KEY is expected to be set in the environment.
+      if (!process.env.API_KEY) {
+        throw new Error("API_KEY environment variable is not set.");
+      }
+      return new GoogleGenAI({ apiKey: process.env.API_KEY });
+    } catch (error) {
+      console.error("Failed to initialize GoogleGenAI:", error);
+      setInitError("Could not initialize the AI service. The API key may be missing or invalid in the application's configuration.");
+      return null;
+    }
+  }, []);
 
   useEffect(() => {
-    if (apiKey) {
-      try {
-        aiRef.current = new GoogleGenAI({ apiKey });
-        // If the only message is an error message, clear it out now that we have a key.
-        if (messages.length === 1 && messages[0].isError) {
-          setMessages([]);
-        }
-      } catch (error) {
-        console.error("Failed to initialize GoogleGenAI:", error);
-        aiRef.current = null;
-        setMessages([{
-          id: `error-init-${Date.now()}`,
-          role: 'model',
-          content: "### Initialization Error\n\nThere was an issue initializing the AI service. The provided key may be invalid or malformed. Please check the console for details.",
-          isError: true,
-        }]);
-      }
-    } else {
-       aiRef.current = null; // Clear instance if key is removed.
-       // The UI in App.tsx handles the "no key" state, so we don't set an error message here.
+    if (initError) {
+      setMessages([{
+        id: `error-init-${Date.now()}`,
+        role: 'model',
+        content: `### Configuration Error\n\n${initError}`,
+        isError: true,
+      }]);
     }
-  }, [apiKey]);
+  }, [initError]);
 
 
   const setHistory = useCallback((history: Message[]) => {
@@ -187,7 +188,7 @@ export const useChatManager = (apiKey: string | null) => {
   }, []);
 
   const sendMessage = useCallback(async (text: string, imageUrl?: string | null, videoUrl?: string | null) => {
-    if (loadingState !== 'idle' || !apiKey || (!text.trim() && !imageUrl && !videoUrl)) return;
+    if (loadingState !== 'idle' || !ai || (!text.trim() && !imageUrl && !videoUrl)) return;
 
     setLoadingState('processing');
     const userMessage: Message = { 
@@ -207,11 +208,7 @@ export const useChatManager = (apiKey: string | null) => {
     const contents = messageToContent([...messages, userMessage]);
 
     try {
-      if (!aiRef.current) {
-        throw new Error("Gemini AI client is not initialized. The API key may be missing or invalid.");
-      }
-
-      const responseStream = await aiRef.current.models.generateContentStream({
+      const responseStream = await ai.models.generateContentStream({
         model: 'gemini-2.5-pro',
         contents,
         config: { systemInstruction },
@@ -244,7 +241,7 @@ export const useChatManager = (apiKey: string | null) => {
     } finally {
       setLoadingState('idle');
     }
-  }, [messages, loadingState, apiKey]);
+  }, [messages, loadingState, ai]);
 
   return { 
     messages, 
