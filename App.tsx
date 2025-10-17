@@ -269,7 +269,7 @@ const App: React.FC = () => {
                 {installPrompt && (
                   <button
                     onClick={handleInstallClick}
-                    className="hidden sm:flex items-center space-x-2 px-3 sm:px-4 py-2 bg-sky-600/80 border border-sky-500/80 rounded-md text-sm text-sky-100 hover:bg-sky-600 hover:border-sky-500 transition-colors"
+                    className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-sky-600/80 border border-sky-500/80 rounded-md text-sm text-sky-100 hover:bg-sky-600 hover:border-sky-500 transition-colors"
                     aria-label="Install App"
                   >
                     <InstallIcon className="w-5 h-5" />
