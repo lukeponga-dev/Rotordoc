@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useChatManager } from './components/SessionManager';
 import { ChatMessage } from './components/ChatMessage';
@@ -364,25 +365,26 @@ const App: React.FC = () => {
                 {showInstallBanner && installPrompt && (
                   <div className="install-banner-animation mb-3 p-3 flex items-center justify-between gap-3 bg-gradient-to-r from-sky-900/80 to-slate-800/80 border border-sky-700/60 rounded-lg shadow-lg">
                     <div className="flex items-center gap-3">
-                      <RotorWiseIcon className="w-8 h-8 text-[var(--accent-primary)] shrink-0" />
+                      <InstallIcon className="w-9 h-9 text-sky-300 shrink-0 p-1" />
                       <div>
-                        <p className="font-bold text-sm text-sky-100">Install RotorWise AI</p>
-                        <p className="text-xs text-sky-300">Add to home screen for quick access.</p>
+                        <p className="font-bold text-sm text-sky-100">Get the Full App Experience</p>
+                        <p className="text-xs text-sky-300">Install for faster access and a native feel.</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                        <button 
-                         onClick={handleInstallClick}
-                         className="px-4 py-1.5 bg-sky-500 text-white rounded-md text-sm font-semibold hover:bg-sky-400 transition-colors"
-                       >
-                         Install
-                       </button>
-                       <button
                          onClick={handleDismissInstall}
-                         className="p-1.5 text-sky-300 hover:text-white hover:bg-sky-800/50 rounded-full transition-colors"
+                         className="px-3 py-1.5 text-sky-300 hover:text-white hover:bg-sky-800/50 rounded-md text-sm transition-colors"
                          aria-label="Dismiss install banner"
                        >
-                          <CloseIcon className="w-5 h-5" />
+                         Later
+                       </button>
+                       <button 
+                         onClick={handleInstallClick}
+                         className="px-4 py-1.5 bg-sky-500 text-white rounded-md text-sm font-semibold hover:bg-sky-400 transition-colors flex items-center gap-2"
+                       >
+                         <InstallIcon className="w-4 h-4" />
+                         <span>Install</span>
                        </button>
                     </div>
                   </div>
