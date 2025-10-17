@@ -7,9 +7,10 @@ interface SettingsModalProps {
   apiKey: string;
   onSaveApiKey: (key: string) => void;
   onOpenPrivacyPolicy: () => void;
+  isPreconfigured: boolean;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, apiKey, onSaveApiKey, onOpenPrivacyPolicy }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, apiKey, onSaveApiKey, onOpenPrivacyPolicy, isPreconfigured }) => {
   const [localApiKey, setLocalApiKey] = useState(apiKey);
 
   useEffect(() => {
@@ -49,49 +50,60 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, a
             <div>
               <h2 className="text-xl font-bold font-display text-slate-100 mb-1">API Key Configuration</h2>
               <p className="text-sm text-slate-400">
-                To use RotorWise AI, you need a Google Gemini API key.
+                {isPreconfigured
+                    ? 'The API key for this application has been pre-configured.'
+                    : 'To use RotorWise AI, you need a Google Gemini API key.'
+                }
               </p>
             </div>
         </div>
         
-        <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-4">
-            <div>
-                <label htmlFor="api-key-input" className="block text-sm font-medium text-slate-300">
-                    Your Google Gemini API Key
-                </label>
-                <input
-                    id="api-key-input"
-                    type="password"
-                    value={localApiKey}
-                    onChange={(e) => setLocalApiKey(e.target.value)}
-                    placeholder="Enter your API key here..."
-                    className="mt-1 w-full bg-slate-800/80 rounded-md border border-[var(--surface-border)] px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-[var(--accent-primary)]"
-                    required
-                />
-            </div>
-
-            <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-lg">
-                <p className="text-xs text-slate-400">
-                    Your API key is stored securely in your browser's local storage and is never sent to our servers. You can get a free API key from{' '}
-                    <a
-                        href="https://aistudio.google.com/app/apikey"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[var(--accent-secondary)] font-medium hover:underline"
-                    >
-                        Google AI Studio
-                    </a>.
+        {isPreconfigured ? (
+            <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-lg text-center">
+                <p className="text-sm text-slate-300">
+                    You're all set! No action is needed to use the application.
                 </p>
             </div>
-            
-            <button
-              type="submit"
-              className="w-full px-4 py-2.5 bg-[var(--accent-primary)] text-white rounded-md text-sm font-semibold hover:bg-orange-500 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--surface-1)] focus:ring-[var(--accent-primary)] disabled:opacity-50"
-              disabled={!localApiKey.trim()}
-            >
-              Save and Continue
-            </button>
-        </form>
+        ) : (
+            <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-4">
+                <div>
+                    <label htmlFor="api-key-input" className="block text-sm font-medium text-slate-300">
+                        Your Google Gemini API Key
+                    </label>
+                    <input
+                        id="api-key-input"
+                        type="password"
+                        value={localApiKey}
+                        onChange={(e) => setLocalApiKey(e.target.value)}
+                        placeholder="Enter your API key here..."
+                        className="mt-1 w-full bg-slate-800/80 rounded-md border border-[var(--surface-border)] px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-[var(--accent-primary)]"
+                        required
+                    />
+                </div>
+
+                <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-lg">
+                    <p className="text-xs text-slate-400">
+                        Your API key is stored securely in your browser's local storage and is never sent to our servers. You can get a free API key from{' '}
+                        <a
+                            href="https://aistudio.google.com/app/apikey"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[var(--accent-secondary)] font-medium hover:underline"
+                        >
+                            Google AI Studio
+                        </a>.
+                    </p>
+                </div>
+                
+                <button
+                  type="submit"
+                  className="w-full px-4 py-2.5 bg-[var(--accent-primary)] text-white rounded-md text-sm font-semibold hover:bg-orange-500 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--surface-1)] focus:ring-[var(--accent-primary)] disabled:opacity-50"
+                  disabled={!localApiKey.trim()}
+                >
+                  Save and Continue
+                </button>
+            </form>
+        )}
 
         <div className="mt-6 text-center">
             <button

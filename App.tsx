@@ -33,6 +33,8 @@ declare global {
   }
 }
 
+const preconfiguredApiKey = process.env.API_KEY || '';
+
 const App: React.FC = () => {
   const [apiKey, setApiKey] = useState<string>('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -54,6 +56,8 @@ const App: React.FC = () => {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const { speak, cancel, speakingMessageId } = useTextToSpeech();
   
+  const isApiKeyPreconfigured = !!preconfiguredApiKey;
+
   useEffect(() => {
     try {
       const savedSessions = localStorage.getItem('rotorwise_sessions');
@@ -64,6 +68,11 @@ const App: React.FC = () => {
       console.error("Failed to load sessions from localStorage:", error);
       localStorage.removeItem('rotorwise_sessions');
     }
+
+    if (isApiKeyPreconfigured) {
+      setApiKey(preconfiguredApiKey);
+      return;
+    }
     
     // Load API Key or prompt user
     const savedKey = localStorage.getItem('gemini_api_key');
@@ -73,7 +82,7 @@ const App: React.FC = () => {
         setIsSettingsOpen(true);
     }
 
-  }, []);
+  }, [isApiKeyPreconfigured]);
   
   useEffect(() => {
     const diagnosisMsg = messages.find(
@@ -139,6 +148,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleSetApiKey = (key: string) => {
+    if (isApiKeyPreconfigured) return;
     setApiKey(key);
     localStorage.setItem('gemini_api_key', key);
   };
@@ -492,6 +502,7 @@ const App: React.FC = () => {
           setIsSettingsOpen(false);
           setCurrentView('privacy');
         }}
+        isPreconfigured={isApiKeyPreconfigured}
       />
     </div>
   );
