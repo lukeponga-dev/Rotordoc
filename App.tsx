@@ -31,7 +31,7 @@ declare global {
 }
 
 const App: React.FC = () => {
-  const { messages, isLoading, sendMessage, setHistory, startNewChat } = useChatManager();
+  const { messages, loadingState, sendMessage, setHistory, startNewChat } = useChatManager();
   const [input, setInput] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
@@ -109,7 +109,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleSend = () => {
-    if ((input.trim() || image) && !isLoading) {
+    if ((input.trim() || image) && loadingState === 'idle') {
       sendMessage(input, image);
       setInput('');
       setImage(null);
@@ -210,12 +210,14 @@ const App: React.FC = () => {
     setInstallPrompt(null);
   };
 
-  const isChatDisabled = isLoading;
+  const isChatDisabled = loadingState !== 'idle';
 
-  const placeholderText = isListening 
-    ? "Listening..." 
-    : image 
-    ? "Describe the attached image or ask a question..." 
+  const placeholderText = isListening
+    ? "Listening..."
+    : isChatDisabled
+    ? (loadingState === 'processing' ? 'RotorWise is thinking...' : 'Generating response...')
+    : image
+    ? "Describe the attached image or ask a question..."
     : "Describe your RX-8 issue, e.g., 'rough idle when warm'...";
 
   return (
@@ -225,7 +227,7 @@ const App: React.FC = () => {
         activeSessionId={activeSessionId}
         isOpen={isSidebarOpen}
         messages={messages}
-        isLoading={isLoading}
+        isLoading={isChatDisabled}
         onClose={() => setIsSidebarOpen(false)}
         onNewChat={handleNewChat}
         onLoadSession={loadSession}
@@ -275,7 +277,7 @@ const App: React.FC = () => {
                 </button>
                 <button
                   onClick={handleExport}
-                  disabled={messages.length === 0 || isLoading}
+                  disabled={messages.length === 0 || isChatDisabled}
                   className="hidden sm:flex items-center space-x-2 px-3 sm:px-4 py-2 bg-slate-800/70 border border-[var(--surface-border)] rounded-md text-sm text-slate-300 hover:bg-slate-700/80 hover:border-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <ExportIcon className="w-5 h-5" />
@@ -285,7 +287,7 @@ const App: React.FC = () => {
             </header>
 
             <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 sm:space-y-8 custom-scrollbar">
-              {messages.length === 0 && !isLoading ? (
+              {messages.length === 0 && loadingState === 'idle' ? (
                 <SuggestionPills onSuggestionClick={handleSuggestionClick} />
               ) : (
                 messages.map((msg) => (
@@ -344,7 +346,7 @@ const App: React.FC = () => {
                     className="p-3 bg-[var(--accent-primary)] text-white rounded-lg disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed hover:bg-orange-500 transition-colors"
                     aria-label="Send message"
                   >
-                    {isLoading ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <SendIcon className="w-6 h-6" />}
+                    {isChatDisabled ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <SendIcon className="w-6 h-6" />}
                   </button>
                 </form>
               </div>

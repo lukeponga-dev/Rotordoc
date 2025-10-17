@@ -121,7 +121,7 @@ const getDisplayErrorMessage = (error: unknown): string => {
 
 export const useChatManager = () => {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadingState, setLoadingState] = useState<'idle' | 'processing' | 'streaming'>('idle');
   const aiRef = useRef<GoogleGenAI | null>(null);
 
   useEffect(() => {
@@ -163,9 +163,9 @@ export const useChatManager = () => {
   }, []);
 
   const sendMessage = useCallback(async (text: string, imageUrl?: string | null) => {
-    if (!process.env.API_KEY || (!text.trim() && !imageUrl)) return;
+    if (loadingState !== 'idle' || !process.env.API_KEY || (!text.trim() && !imageUrl)) return;
 
-    setIsLoading(true);
+    setLoadingState('processing');
     const userMessage: Message = { id: `user-${Date.now()}`, role: 'user', content: text, imageUrl: imageUrl || undefined };
     
     const modelMessageId = `model-${Date.now()}`;
@@ -188,7 +188,12 @@ export const useChatManager = () => {
       });
 
       let modelResponse = '';
+      let isFirstChunk = true;
       for await (const chunk of responseStream) {
+        if (isFirstChunk) {
+          setLoadingState('streaming');
+          isFirstChunk = false;
+        }
         modelResponse += chunk.text;
         setMessages(prev => prev.map(msg => 
             msg.id === modelMessageId ? { ...msg, content: modelResponse } : msg
@@ -207,13 +212,13 @@ export const useChatManager = () => {
 
       setMessages(prev => prev.map(msg => msg.id === modelMessageId ? errorMessage : msg));
     } finally {
-      setIsLoading(false);
+      setLoadingState('idle');
     }
-  }, [messages]);
+  }, [messages, loadingState]);
 
   return { 
     messages, 
-    isLoading, 
+    loadingState, 
     sendMessage, 
     setHistory, 
     startNewChat,
