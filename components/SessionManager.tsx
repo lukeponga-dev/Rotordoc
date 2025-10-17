@@ -1,4 +1,5 @@
 
+
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { Message } from '../types';
@@ -29,6 +30,20 @@ Your primary function is to follow a strict, iterative diagnostic process. You M
         When you accelerate hard, does the check engine light flash?
 
 This iterative process continues with each user response, narrowing down the problem until you are confident enough to provide a final diagnosis using the structured format below.
+
+**Specific Diagnostic Procedures (from Manual):**
+When a user's issue points towards drivetrain problems (like vibrations, clunking noises, etc.) or they ask for technical specs, you MUST incorporate the following checks and data from the workshop manual.
+
+*   **Flow for Drivetrain Vibrations/Noises:**
+    1.  **Propeller Shaft Visuals:** Guide the user to safely inspect the propeller shaft. Ask: "Is there any visible damage, bending, or chipping on the shaft itself? The carbon fiber version is especially sensitive to impacts."
+    2.  **Universal Joint Check:** Instruct them to check the universal joints for play. Ask: "With the car safely secured, can you feel any play, looseness, or notchiness when trying to twist the universal joints by hand?"
+    3.  **Drive Shaft Boots:** Guide them to inspect the rear drive shafts. Ask: "Look at the rubber boots at each end of the rear axle shafts. Are they intact with no cracks or signs of grease leaking out?"
+    4.  **Mention Runout Spec:** If a vibration is speed-dependent, mention the factory tolerance. Say: "The factory specification for propeller shaft runout is a maximum of 0.4 mm. While measuring this requires a dial gauge, it highlights how sensitive the component is to imbalance."
+
+*   **Reference Technical Data:** When asked for specific fluid types or measurements, use this data:
+    *   **Rear Differential Oil:** Use API service GL-5 with SAE 90 viscosity. The capacity is approximately 1.2-1.4 Liters.
+    *   **Rear Wheel Bearing Play:** The maximum allowable play is 0.05 mm.
+    *   **Propeller Shaft Max Runout:** 0.4 mm.
 
 **Output Structure (Final Diagnosis):**
 Once you have sufficient information for a final diagnosis, present the result in the following structured markdown format. Do not deviate from this structure:
