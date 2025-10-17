@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { CloseIcon, SaveIcon } from './Icons';
 
@@ -10,6 +11,7 @@ interface SettingsModalProps {
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onSave, currentApiKey }) => {
   const [apiKey, setApiKey] = useState('');
+  const TEST_API_KEY = "TEST_API_KEY_FOR_DEMO";
 
   useEffect(() => {
     if (isOpen) {
@@ -25,6 +27,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
       onSave(apiKey.trim());
       onClose();
     }
+  };
+  
+  const handleUseTestKey = () => {
+    onSave(TEST_API_KEY);
+    onClose();
   };
 
   return (
@@ -64,6 +71,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, o
              <p className="text-xs text-slate-500 mt-2">
               Your API key is stored securely in your browser's local storage and is never sent to our servers.
               Get your key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-[var(--accent-secondary)] hover:underline">Google AI Studio</a>.
+            </p>
+             <p className="text-xs text-slate-500 mt-2">
+              Don't have a key?{' '}
+              <button onClick={handleUseTestKey} className="text-[var(--accent-secondary)] hover:underline focus:outline-none font-medium">
+                Use a test key to explore the app.
+              </button>
             </p>
           </div>
           

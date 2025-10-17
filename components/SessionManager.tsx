@@ -128,8 +128,8 @@ export const useChatManager = (apiKey: string | null) => {
     if (apiKey) {
       try {
         aiRef.current = new GoogleGenAI({ apiKey });
-        // If the only message is an API key error, clear it.
-        if (messages.length === 1 && messages[0].isError && messages[0].content.includes("API key")) {
+        // If the only message is an error message, clear it out now that we have a key.
+        if (messages.length === 1 && messages[0].isError) {
           setMessages([]);
         }
       } catch (error) {
@@ -138,18 +138,13 @@ export const useChatManager = (apiKey: string | null) => {
         setMessages([{
           id: `error-init-${Date.now()}`,
           role: 'model',
-          content: "### Initialization Error\n\nThere was an issue initializing the AI service with the provided key. It may be invalid or malformed. Please check the console for details.",
+          content: "### Initialization Error\n\nThere was an issue initializing the AI service. The provided key may be invalid or malformed. Please check the console for details.",
           isError: true,
         }]);
       }
     } else {
-       aiRef.current = null; // Clear instance if key is removed
-       setMessages([{
-        id: `error-init-${Date.now()}`,
-        role: 'model',
-        content: "### Configuration Required\n\nPlease provide your Google Gemini API key in the settings to start a new chat.",
-        isError: true,
-      }]);
+       aiRef.current = null; // Clear instance if key is removed.
+       // The UI in App.tsx handles the "no key" state, so we don't set an error message here.
     }
   }, [apiKey]);
 
