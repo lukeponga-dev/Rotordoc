@@ -78,6 +78,13 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSpeak, onCa
                 className="rounded-lg max-w-xs max-h-64 object-contain border border-orange-900/50"
             />
         )}
+        {message.videoUrl && (
+            <video
+                src={message.videoUrl}
+                controls
+                className="rounded-lg max-w-xs max-h-64 object-contain border border-orange-900/50"
+            />
+        )}
         {message.content && <p className="text-slate-100 text-sm sm:text-base">{message.content}</p>}
       </div>
     );

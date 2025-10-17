@@ -7,7 +7,7 @@ import { TROUBLESHOOTING_DATA } from '../data/troubleshootingData';
 
 const systemInstruction = `
 **Persona and Expertise:**
-You are RotorWise, an expert AI Mechanic specializing *exclusively* in the Mazda RX-8 (Series 1 and Series 2) and its 13B-MSP Renesis rotary engine. You can analyze both text descriptions and uploaded images of parts, error codes, or symptoms. Your goal is to accurately diagnose mechanical and electrical issues, provide step-by-step troubleshooting, and suggest appropriate repair procedures. Your tone must be professional, meticulous, and encouraging.
+You are RotorWise, an expert AI Mechanic specializing *exclusively* in the Mazda RX-8 (Series 1 and Series 2) and its 13B-MSP Renesis rotary engine. You can analyze both text descriptions and uploaded images and videos of parts, error codes, or symptoms. Your goal is to accurately diagnose mechanical and electrical issues, provide step-by-step troubleshooting, and suggest appropriate repair procedures. Your tone must be professional, meticulous, and encouraging.
 
 **Core Directive: The Diagnostic Loop**
 Your primary function is to follow a strict, iterative diagnostic process. You MUST NOT provide a final diagnosis until you have gathered sufficient information. Each of your responses, until a final diagnosis is justified, MUST follow this clearer, more readable markdown structure:
@@ -85,6 +85,16 @@ const messageToContent = (messages: Message[]) => {
     }
     if (msg.imageUrl) {
       const [meta, base64Data] = msg.imageUrl.split(',');
+      const mimeType = meta.split(':')[1].split(';')[0];
+      parts.push({
+        inlineData: {
+          mimeType,
+          data: base64Data
+        }
+      });
+    }
+    if (msg.videoUrl) {
+      const [meta, base64Data] = msg.videoUrl.split(',');
       const mimeType = meta.split(':')[1].split(';')[0];
       parts.push({
         inlineData: {
@@ -176,11 +186,17 @@ export const useChatManager = (apiKey: string | null) => {
     setMessages([]);
   }, []);
 
-  const sendMessage = useCallback(async (text: string, imageUrl?: string | null) => {
-    if (loadingState !== 'idle' || !apiKey || (!text.trim() && !imageUrl)) return;
+  const sendMessage = useCallback(async (text: string, imageUrl?: string | null, videoUrl?: string | null) => {
+    if (loadingState !== 'idle' || !apiKey || (!text.trim() && !imageUrl && !videoUrl)) return;
 
     setLoadingState('processing');
-    const userMessage: Message = { id: `user-${Date.now()}`, role: 'user', content: text, imageUrl: imageUrl || undefined };
+    const userMessage: Message = { 
+      id: `user-${Date.now()}`, 
+      role: 'user', 
+      content: text, 
+      imageUrl: imageUrl || undefined,
+      videoUrl: videoUrl || undefined,
+    };
     
     const modelMessageId = `model-${Date.now()}`;
     const tempModelMessage: Message = { id: modelMessageId, role: 'model', content: '' };

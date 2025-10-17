@@ -3,6 +3,7 @@ export interface Message {
   role: 'user' | 'model';
   content: string;
   imageUrl?: string;
+  videoUrl?: string;
   isError?: boolean;
 }
 

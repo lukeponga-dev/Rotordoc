@@ -38,6 +38,7 @@ const App: React.FC = () => {
   const { messages, loadingState, sendMessage, setHistory, startNewChat } = useChatManager(apiKey);
   const [input, setInput] = useState('');
   const [image, setImage] = useState<string | null>(null);
+  const [video, setVideo] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -131,10 +132,11 @@ const App: React.FC = () => {
   };
 
   const handleSend = () => {
-    if ((input.trim() || image) && loadingState === 'idle') {
-      sendMessage(input, image);
+    if ((input.trim() || image || video) && loadingState === 'idle') {
+      sendMessage(input, image, video);
       setInput('');
       setImage(null);
+      setVideo(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -142,7 +144,7 @@ const App: React.FC = () => {
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    sendMessage(suggestion, null);
+    sendMessage(suggestion, null, null);
   };
   
   const handleExport = () => {
@@ -202,10 +204,16 @@ const App: React.FC = () => {
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
+    if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImage(reader.result as string);
+        if (file.type.startsWith('image/')) {
+          setImage(reader.result as string);
+          setVideo(null);
+        } else if (file.type.startsWith('video/')) {
+          setVideo(reader.result as string);
+          setImage(null);
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -246,6 +254,8 @@ const App: React.FC = () => {
     ? (loadingState === 'processing' ? 'RotorWise is thinking...' : 'Generating response...')
     : image
     ? "Describe the attached image or ask a question..."
+    : video
+    ? "Describe the attached video or ask a question..."
     : "Describe your RX-8 issue, e.g., 'rough idle when warm'...";
 
   const activeSessionName = sessions.find(s => s.id === activeSessionId)?.name || 'New Diagnosis';
@@ -393,6 +403,21 @@ const App: React.FC = () => {
                     </div>
                   </div>
                 )}
+                {video && (
+                  <div className="relative inline-block mb-2 ml-2">
+                    <video src={video} controls className="w-40 h-auto object-cover rounded-md border-2 border-[var(--surface-border)]" />
+                    <button
+                      onClick={() => {
+                        setVideo(null);
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                      }}
+                      className="absolute -top-2 -right-2 bg-slate-800 text-white rounded-full p-1 border-2 border-slate-600 hover:bg-red-500 transition-colors"
+                      aria-label="Remove video"
+                    >
+                      <CloseIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
                 {image && (
                   <div className="relative inline-block mb-2 ml-2">
                     <img src={image} alt="Upload preview" className="w-20 h-20 object-cover rounded-md border-2 border-[var(--surface-border)]" />
@@ -409,7 +434,7 @@ const App: React.FC = () => {
                   </div>
                 )}
                 <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className={`flex items-center space-x-2 sm:space-x-3 bg-slate-800/80 rounded-xl border border-[var(--surface-border)] focus-within:ring-2 focus-within:ring-[var(--accent-primary)] transition-shadow p-1 ${isChatDisabled || !apiKey ? 'opacity-60' : ''}`}>
-                  <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+                  <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,video/*" className="hidden" />
                   <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isChatDisabled || !apiKey} className="p-2 text-[var(--text-secondary)] hover:text-[var(--accent-secondary)] disabled:text-slate-600 disabled:cursor-not-allowed transition-colors rounded-full">
                     <PaperclipIcon className="w-6 h-6" />
                   </button>
@@ -430,7 +455,7 @@ const App: React.FC = () => {
                   </div>
                   <button
                     type="submit"
-                    disabled={isChatDisabled || (!input.trim() && !image) || !apiKey}
+                    disabled={isChatDisabled || (!input.trim() && !image && !video) || !apiKey}
                     className="p-3 bg-[var(--accent-primary)] text-white rounded-lg disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed hover:bg-orange-500 transition-colors"
                     aria-label="Send message"
                   >

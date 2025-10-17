@@ -2,6 +2,7 @@
   "name": "RotorWise AI",
   "description": "An AI-powered diagnostic tool for Mazda RX-8 owners. Get expert advice on your rotary engine's problems from RotorWise AI.",
   "requestFramePermissions": [
-    "microphone"
+    "microphone",
+    "camera"
   ]
 }
