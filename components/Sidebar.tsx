@@ -1,6 +1,6 @@
 import React from 'react';
 import { Session, Message } from '../types';
-import { PlusIcon, SaveIcon, TrashIcon, CloseIcon, ExportIcon, BookOpenIcon, InstallIcon } from './Icons';
+import { PlusIcon, SaveIcon, TrashIcon, CloseIcon, ExportIcon, BookOpenIcon, InstallIcon, SettingsIcon } from './Icons';
 
 interface SidebarProps {
   sessions: Session[];
@@ -16,6 +16,7 @@ interface SidebarProps {
   onExport: () => void;
   onInstall: () => void;
   showInstallButton: boolean;
+  onOpenSettings: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -31,7 +32,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSaveSession,
   onExport,
   onInstall,
-  showInstallButton
+  showInstallButton,
+  onOpenSettings,
 }) => {
   return (
     <>
@@ -99,6 +101,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
         
         <div className="p-4 border-t border-[var(--surface-border)] space-y-2">
+           <button
+            onClick={onOpenSettings}
+            className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 bg-slate-800 border border-[var(--surface-border)] rounded-md text-sm text-slate-300 hover:bg-slate-700 transition-colors"
+          >
+            <SettingsIcon className="w-5 h-5" />
+            <span>Settings</span>
+          </button>
            {showInstallButton && (
                 <button
                     onClick={onInstall}

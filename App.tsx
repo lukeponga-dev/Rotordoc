@@ -2,12 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useChatManager } from './components/SessionManager';
 import { ChatMessage } from './components/ChatMessage';
 import { SuggestionPills } from './components/SuggestionPills';
-import { SendIcon, ExportIcon, RotorWiseIcon, MenuIcon, PaperclipIcon, MicrophoneIcon, CloseIcon, BookOpenIcon, InstallIcon } from './components/Icons';
+import { SendIcon, ExportIcon, RotorWiseIcon, MenuIcon, PaperclipIcon, MicrophoneIcon, CloseIcon, BookOpenIcon, InstallIcon, SettingsIcon } from './components/Icons';
 import { Sidebar } from './components/Sidebar';
 import { exportToPDF } from './utils/export';
 import { Session } from './types';
 import { WorkshopGuide } from './components/WorkshopGuide';
 import { useTextToSpeech } from './hooks/useTextToSpeech';
+import { SettingsModal } from './components/SettingsModal';
 
 // Fix: Define SpeechRecognition interface to fix TypeScript error.
 interface SpeechRecognition {
@@ -31,7 +32,9 @@ declare global {
 }
 
 const App: React.FC = () => {
-  const { messages, loadingState, sendMessage, setHistory, startNewChat } = useChatManager();
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const { messages, loadingState, sendMessage, setHistory, startNewChat } = useChatManager(apiKey);
   const [input, setInput] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
@@ -45,6 +48,14 @@ const App: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const { speak, cancel, speakingMessageId } = useTextToSpeech();
+  
+  useEffect(() => {
+    // Load API key from local storage on startup
+    const savedApiKey = localStorage.getItem('gemini_api_key');
+    if (savedApiKey) {
+      setApiKey(savedApiKey);
+    }
+  }, []);
 
   useEffect(() => {
     try {
@@ -107,6 +118,11 @@ const App: React.FC = () => {
         console.warn('Speech recognition not supported in this browser.');
     }
   }, []);
+
+  const handleSaveApiKey = (newApiKey: string) => {
+    setApiKey(newApiKey);
+    localStorage.setItem('gemini_api_key', newApiKey);
+  };
 
   const handleSend = () => {
     if ((input.trim() || image) && loadingState === 'idle') {
@@ -236,6 +252,7 @@ const App: React.FC = () => {
         onExport={handleExport}
         onInstall={handleInstallClick}
         showInstallButton={!!installPrompt}
+        onOpenSettings={() => setIsSettingsOpen(true)}
       />
       {currentView === 'guide' ? (
         <WorkshopGuide onClose={() => setCurrentView('chat')} />
@@ -283,11 +300,36 @@ const App: React.FC = () => {
                   <ExportIcon className="w-5 h-5" />
                   <span className="hidden sm:inline">Export</span>
                 </button>
+                <button
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="hidden sm:flex items-center space-x-2 px-3 sm:px-4 py-2 bg-slate-800/70 border border-[var(--surface-border)] rounded-md text-sm text-slate-300 hover:bg-slate-700/80 hover:border-slate-600 transition-colors"
+                  aria-label="Open settings"
+                >
+                  <SettingsIcon className="w-5 h-5" />
+                  <span className="hidden sm:inline">Settings</span>
+                </button>
               </div>
             </header>
 
             <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 sm:space-y-8 custom-scrollbar">
-              {messages.length === 0 && loadingState === 'idle' ? (
+              {messages.length === 0 && loadingState === 'idle' && !apiKey ? (
+                 <div className="flex flex-col items-center justify-center h-full text-center p-2">
+                    <div className="flex flex-col items-center space-y-2 mb-6">
+                        <RotorWiseIcon className="w-16 h-16 sm:w-20 sm:h-20 text-[var(--accent-primary)] drop-shadow-lg" />
+                        <h1 className="text-3xl sm:text-4xl font-bold font-display tracking-wide text-slate-100">Welcome to RotorWise AI</h1>
+                    </div>
+                    <p className="max-w-xl mb-8 text-base text-slate-400">
+                        To get started, please add your Google Gemini API key in the settings.
+                    </p>
+                    <button
+                        onClick={() => setIsSettingsOpen(true)}
+                        className="flex items-center space-x-2 px-6 py-3 bg-[var(--accent-primary)] text-white rounded-md text-base hover:bg-orange-500 transition-colors"
+                    >
+                        <SettingsIcon className="w-5 h-5" />
+                        <span>Open Settings</span>
+                    </button>
+                </div>
+              ) : messages.length === 0 && loadingState === 'idle' ? (
                 <SuggestionPills onSuggestionClick={handleSuggestionClick} />
               ) : (
                 messages.map((msg) => (
@@ -320,29 +362,29 @@ const App: React.FC = () => {
                     </button>
                   </div>
                 )}
-                <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className={`flex items-center space-x-2 sm:space-x-3 bg-slate-800/80 rounded-xl border border-[var(--surface-border)] focus-within:ring-2 focus-within:ring-[var(--accent-primary)] transition-shadow p-1 ${isChatDisabled ? 'opacity-60' : ''}`}>
+                <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className={`flex items-center space-x-2 sm:space-x-3 bg-slate-800/80 rounded-xl border border-[var(--surface-border)] focus-within:ring-2 focus-within:ring-[var(--accent-primary)] transition-shadow p-1 ${isChatDisabled || !apiKey ? 'opacity-60' : ''}`}>
                   <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
-                  <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isChatDisabled} className="p-2 text-[var(--text-secondary)] hover:text-[var(--accent-secondary)] disabled:text-slate-600 disabled:cursor-not-allowed transition-colors rounded-full">
+                  <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isChatDisabled || !apiKey} className="p-2 text-[var(--text-secondary)] hover:text-[var(--accent-secondary)] disabled:text-slate-600 disabled:cursor-not-allowed transition-colors rounded-full">
                     <PaperclipIcon className="w-6 h-6" />
                   </button>
                   <textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                    placeholder={placeholderText}
+                    placeholder={!apiKey ? "Please set your API key in settings." : placeholderText}
                     className="flex-1 w-full bg-transparent p-2 text-sm sm:text-base text-slate-200 placeholder-slate-500 focus:outline-none resize-none custom-scrollbar"
-                    disabled={isChatDisabled}
+                    disabled={isChatDisabled || !apiKey}
                     rows={1}
                   />
                   <div className="relative flex items-center">
-                    <button type="button" onClick={toggleListening} disabled={isChatDisabled} className="p-2 text-[var(--text-secondary)] hover:text-[var(--accent-secondary)] disabled:text-slate-600 disabled:cursor-not-allowed transition-colors rounded-full">
+                    <button type="button" onClick={toggleListening} disabled={isChatDisabled || !apiKey} className="p-2 text-[var(--text-secondary)] hover:text-[var(--accent-secondary)] disabled:text-slate-600 disabled:cursor-not-allowed transition-colors rounded-full">
                        <MicrophoneIcon className={`w-6 h-6 ${isListening ? 'text-[var(--accent-primary)]' : ''}`} />
                     </button>
                     {isListening && <div className="absolute inset-0 pulse-ring-animation" aria-hidden="true"></div>}
                   </div>
                   <button
                     type="submit"
-                    disabled={isChatDisabled || (!input.trim() && !image)}
+                    disabled={isChatDisabled || (!input.trim() && !image) || !apiKey}
                     className="p-3 bg-[var(--accent-primary)] text-white rounded-lg disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed hover:bg-orange-500 transition-colors"
                     aria-label="Send message"
                   >
@@ -354,6 +396,12 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        onSave={handleSaveApiKey}
+        currentApiKey={apiKey}
+      />
     </div>
   );
 };

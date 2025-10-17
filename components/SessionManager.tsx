@@ -97,7 +97,7 @@ const getDisplayErrorMessage = (error: unknown): string => {
     const errorMessage = ((error as Error).message || '').toLowerCase();
 
     if (errorMessage.includes('api key not valid')) {
-      return "The configured API key is invalid. Please ensure it is correct and has the necessary permissions. You may need to contact the site administrator.";
+      return "The API key provided is invalid. Please open Settings, correct the key, and try again.";
     }
     if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
       return "The AI is currently busy due to high traffic. Please wait a moment before trying again.";
@@ -119,35 +119,39 @@ const getDisplayErrorMessage = (error: unknown): string => {
   return "An unexpected error occurred. Please check the developer console for more details and try again later.";
 };
 
-export const useChatManager = () => {
+export const useChatManager = (apiKey: string | null) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingState, setLoadingState] = useState<'idle' | 'processing' | 'streaming'>('idle');
   const aiRef = useRef<GoogleGenAI | null>(null);
 
   useEffect(() => {
-    const apiKey = process.env.API_KEY;
     if (apiKey) {
       try {
         aiRef.current = new GoogleGenAI({ apiKey });
+        // If the only message is an API key error, clear it.
+        if (messages.length === 1 && messages[0].isError && messages[0].content.includes("API key")) {
+          setMessages([]);
+        }
       } catch (error) {
         console.error("Failed to initialize GoogleGenAI:", error);
         aiRef.current = null;
         setMessages([{
           id: `error-init-${Date.now()}`,
           role: 'model',
-          content: "### Initialization Error\n\nThere was an issue initializing the AI service. Please check the console for details.",
+          content: "### Initialization Error\n\nThere was an issue initializing the AI service with the provided key. It may be invalid or malformed. Please check the console for details.",
           isError: true,
         }]);
       }
     } else {
+       aiRef.current = null; // Clear instance if key is removed
        setMessages([{
         id: `error-init-${Date.now()}`,
         role: 'model',
-        content: "### Configuration Error\n\nThe application is not configured correctly as the Gemini API key is missing from the environment.",
+        content: "### Configuration Required\n\nPlease provide your Google Gemini API key in the settings to start a new chat.",
         isError: true,
       }]);
     }
-  }, []);
+  }, [apiKey]);
 
 
   const setHistory = useCallback((history: Message[]) => {
@@ -163,7 +167,7 @@ export const useChatManager = () => {
   }, []);
 
   const sendMessage = useCallback(async (text: string, imageUrl?: string | null) => {
-    if (loadingState !== 'idle' || !process.env.API_KEY || (!text.trim() && !imageUrl)) return;
+    if (loadingState !== 'idle' || !apiKey || (!text.trim() && !imageUrl)) return;
 
     setLoadingState('processing');
     const userMessage: Message = { id: `user-${Date.now()}`, role: 'user', content: text, imageUrl: imageUrl || undefined };
@@ -214,7 +218,7 @@ export const useChatManager = () => {
     } finally {
       setLoadingState('idle');
     }
-  }, [messages, loadingState]);
+  }, [messages, loadingState, apiKey]);
 
   return { 
     messages, 
