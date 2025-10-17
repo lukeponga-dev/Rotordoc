@@ -34,7 +34,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, a
       role="dialog"
     >
       <div
-        className="relative max-w-lg w-full bg-gradient-to-br from-[var(--surface-1)] to-slate-900 rounded-lg border border-[var(--surface-border)] shadow-2xl p-6 sm:p-8"
+        className="relative max-w-lg w-full bg-gradient-to-br from-[var(--surface-1)] to-slate-900/95 rounded-xl border border-[var(--surface-border)] shadow-2xl p-6 sm:p-8"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -59,7 +59,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, a
         </div>
         
         {isPreconfigured ? (
-            <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-lg text-center">
+            <div className="p-4 bg-[var(--surface-2)]/50 border border-[var(--surface-border)] rounded-lg text-center">
                 <p className="text-sm text-slate-300">
                     You're all set! No action is needed to use the application.
                 </p>
@@ -76,14 +76,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, a
                         value={localApiKey}
                         onChange={(e) => setLocalApiKey(e.target.value)}
                         placeholder="Enter your API key here..."
-                        className="mt-1 w-full bg-slate-800/80 rounded-md border border-[var(--surface-border)] px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-[var(--accent-primary)]"
+                        className="mt-1 w-full bg-[var(--surface-2)] rounded-md border border-[var(--surface-border)] px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--surface-1)] focus:ring-[var(--accent-primary)]"
                         required
                     />
                 </div>
 
-                <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-lg">
+                <div className="p-4 bg-[var(--surface-2)]/50 border border-[var(--surface-border)] rounded-lg">
                     <p className="text-xs text-slate-400">
-                        Your API key is stored securely in your browser's local storage and is never sent to our servers. You can get a free API key from{' '}
+                        Your API key is stored securely in your browser's local storage. Get a free API key from{' '}
                         <a
                             href="https://aistudio.google.com/app/apikey"
                             target="_blank"

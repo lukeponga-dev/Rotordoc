@@ -1,4 +1,3 @@
-
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -15,7 +14,7 @@ interface ChatMessageProps {
 
 // A typing indicator to show while the model is generating a response.
 const ModelResponseLoader: React.FC = () => (
-  <div className="flex items-center space-x-2 p-2">
+  <div className="flex items-center space-x-1.5 p-3">
     <div className="w-2 h-2 bg-slate-500 rounded-full animate-typing-dot" style={{ animationDelay: '0s' }}></div>
     <div className="w-2 h-2 bg-slate-500 rounded-full animate-typing-dot" style={{ animationDelay: '0.2s' }}></div>
     <div className="w-2 h-2 bg-slate-500 rounded-full animate-typing-dot" style={{ animationDelay: '0.4s' }}></div>
@@ -37,14 +36,14 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSpeak, onCa
   };
 
   // Common container class for animation
-  const containerClass = 'chat-message-container w-full max-w-3xl mx-auto';
+  const containerClass = 'chat-message-container w-full max-w-4xl mx-auto';
 
   if (isUser) {
     return (
       <div className={`${containerClass} flex justify-end`}>
         <div className="flex items-start gap-3 sm:gap-4 max-w-[90%] sm:max-w-[80%]">
           <div className="order-2 flex flex-col items-end">
-            <div className="user-bubble text-sm sm:text-base p-3 rounded-2xl rounded-br-md bg-gradient-to-br from-orange-600 to-orange-800 shadow-md">
+            <div className="user-bubble text-sm sm:text-base p-3 rounded-2xl rounded-br-lg bg-gradient-to-br from-[var(--accent-primary)] to-orange-700 shadow-lg">
               {message.imageUrl && <img src={message.imageUrl} alt="User upload" className="mb-2 rounded-lg max-h-60" />}
               {message.videoUrl && <video src={message.videoUrl} controls className="mb-2 rounded-lg max-h-60" />}
               <p className="whitespace-pre-wrap">{message.content}</p>
@@ -62,11 +61,11 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSpeak, onCa
   return (
     <div className={`${containerClass} flex justify-start`}>
       <div className="flex items-start gap-3 sm:gap-4 max-w-[90%] sm:max-w-[85%]">
-        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-800 border border-[var(--surface-border)] flex items-center justify-center shrink-0 shadow-sm mt-1">
+        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[var(--surface-2)] border border-[var(--surface-border)] flex items-center justify-center shrink-0 shadow-sm mt-1">
           <RotorWiseIcon className="w-6 h-6 sm:w-7 sm:h-7 text-[var(--accent-primary)]" />
         </div>
         <div className="flex flex-col items-start w-full">
-          <div className={`prose prose-invert prose-sm sm:prose-base max-w-none text-left p-3 sm:p-4 rounded-2xl rounded-bl-md bg-gradient-to-br from-slate-800 to-slate-900/90 shadow-lg ${message.isError ? 'border border-red-500/50' : ''}`}>
+          <div className={`model-bubble prose prose-invert prose-sm sm:prose-base max-w-none text-left p-3 sm:p-4 rounded-2xl rounded-bl-lg bg-[var(--surface-1)] shadow-lg border border-[var(--surface-border)] ${message.isError ? 'border-red-500/50' : ''}`}>
             {message.content ? (
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
             ) : (
@@ -75,7 +74,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSpeak, onCa
           </div>
           {message.content && !message.isError && (
              <div className="flex items-center space-x-2 mt-2 pl-1">
-              <button onClick={handleSpeakClick} className="p-1.5 bg-slate-700/80 backdrop-blur-sm rounded-full text-slate-400 hover:text-[var(--accent-secondary)] hover:bg-slate-600/80 transition-colors" title={isSpeaking ? 'Stop speaking' : 'Read aloud'}>
+              <button onClick={handleSpeakClick} className="p-1.5 bg-[var(--surface-2)]/80 backdrop-blur-sm rounded-full text-slate-400 hover:text-[var(--accent-secondary)] hover:bg-slate-700/80 transition-colors" title={isSpeaking ? 'Stop speaking' : 'Read aloud'}>
                 {isSpeaking ? <StopIcon className="w-4 h-4" /> : <PlayIcon className="w-4 h-4" />}
               </button>
               <Feedback />
