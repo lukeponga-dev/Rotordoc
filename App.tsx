@@ -364,11 +364,15 @@ const App: React.FC = () => {
                 {/* --- PWA Install Banner --- */}
                 {showInstallBanner && installPrompt && (
                   <div className="install-banner-animation mb-3 p-3 flex items-center justify-between gap-3 bg-gradient-to-r from-sky-900/80 to-slate-800/80 border border-sky-700/60 rounded-lg shadow-lg">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
                       <InstallIcon className="w-9 h-9 text-sky-300 shrink-0 p-1" />
-                      <div>
-                        <p className="font-bold text-sm text-sky-100">Get the Full App Experience</p>
-                        <p className="text-xs text-sky-300">Install for faster access and a native feel.</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-sky-100 leading-tight">
+                          Download RotorWise AI now and get instant diagnostics, symptom tracking, and expert insights—all from your phone.
+                        </p>
+                        <blockquote className="mt-1.5 text-xs text-sky-300 border-l-2 border-sky-600 pl-2 italic">
+                          Tap below to install and start your smarter driving journey today!
+                        </blockquote>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
@@ -384,7 +388,7 @@ const App: React.FC = () => {
                          className="px-4 py-1.5 bg-sky-500 text-white rounded-md text-sm font-semibold hover:bg-sky-400 transition-colors flex items-center gap-2"
                        >
                          <InstallIcon className="w-4 h-4" />
-                         <span>Install</span>
+                         <span>Install Now</span>
                        </button>
                     </div>
                   </div>
