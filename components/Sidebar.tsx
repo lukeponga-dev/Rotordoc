@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Session, Message } from '../types';
 import { PlusIcon, SaveIcon, TrashIcon, CloseIcon, ExportIcon, BookOpenIcon, InstallIcon, SettingsIcon } from './Icons';
@@ -16,7 +17,6 @@ interface SidebarProps {
   onExport: () => void;
   onInstall: () => void;
   showInstallButton: boolean;
-  onOpenSettings: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({

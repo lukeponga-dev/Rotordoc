@@ -262,7 +262,6 @@ const App: React.FC = () => {
         onExport={handleExport}
         onInstall={handleInstallClick}
         showInstallButton={!!installPrompt}
-        onOpenSettings={() => setIsSettingsOpen(true)}
       />
       {currentView === 'guide' ? (
         <WorkshopGuide onClose={() => setCurrentView('chat')} />
@@ -309,6 +308,13 @@ const App: React.FC = () => {
                 >
                   <ExportIcon className="w-5 h-5" />
                   <span className="hidden sm:inline">Export</span>
+                </button>
+                <button
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="p-2 bg-slate-800/70 border border-[var(--surface-border)] rounded-md text-slate-300 hover:bg-slate-700/80 hover:border-slate-600 transition-colors"
+                  aria-label="Open Settings"
+                >
+                  <SettingsIcon className="w-5 h-5" />
                 </button>
               </div>
             </header>
@@ -431,8 +437,6 @@ const App: React.FC = () => {
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
-        onSave={() => {}}
-        currentApiKey={null}
       />
     </div>
   );
