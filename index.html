@@ -92,6 +92,21 @@
         border: 2px solid var(--accent-primary);
         animation: pulse-ring 1.5s cubic-bezier(0.21, 0.61, 0.35, 1) infinite;
     }
+    
+    /* PWA Install Banner Animation */
+    @keyframes slide-in-bottom {
+      from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    .install-banner-animation {
+      animation: slide-in-bottom 0.4s ease-out forwards;
+    }
 
     /* Custom styles for rendered markdown */
     .prose h3 {

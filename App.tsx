@@ -43,6 +43,7 @@ const App: React.FC = () => {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<'chat' | 'guide'>('chat');
   const [installPrompt, setInstallPrompt] = useState<any | null>(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -85,6 +86,10 @@ const App: React.FC = () => {
     const handleBeforeInstallPrompt = (e: Event) => {
         e.preventDefault();
         setInstallPrompt(e);
+        const dismissedInSession = sessionStorage.getItem('rotorwise_install_dismissed');
+        if (!dismissedInSession) {
+            setShowInstallBanner(true);
+        }
     };
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
@@ -216,6 +221,7 @@ const App: React.FC = () => {
 
   const handleInstallClick = async () => {
     if (!installPrompt) return;
+    setShowInstallBanner(false);
     installPrompt.prompt();
     const { outcome } = await installPrompt.userChoice;
     if (outcome === 'accepted') {
@@ -224,6 +230,11 @@ const App: React.FC = () => {
         console.log('User dismissed the install prompt');
     }
     setInstallPrompt(null);
+  };
+
+  const handleDismissInstall = () => {
+    setShowInstallBanner(false);
+    sessionStorage.setItem('rotorwise_install_dismissed', 'true');
   };
 
   const isChatDisabled = loadingState !== 'idle';
@@ -347,6 +358,33 @@ const App: React.FC = () => {
 
             <footer className="p-3 sm:p-4 border-t border-[var(--surface-border)] shrink-0">
               <div className="max-w-3xl mx-auto">
+                {/* --- PWA Install Banner --- */}
+                {showInstallBanner && installPrompt && (
+                  <div className="install-banner-animation mb-3 p-3 flex items-center justify-between gap-3 bg-gradient-to-r from-sky-900/80 to-slate-800/80 border border-sky-700/60 rounded-lg shadow-lg">
+                    <div className="flex items-center gap-3">
+                      <RotorWiseIcon className="w-8 h-8 text-[var(--accent-primary)] shrink-0" />
+                      <div>
+                        <p className="font-bold text-sm text-sky-100">Install RotorWise AI</p>
+                        <p className="text-xs text-sky-300">Add to home screen for quick access.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                       <button 
+                         onClick={handleInstallClick}
+                         className="px-4 py-1.5 bg-sky-500 text-white rounded-md text-sm font-semibold hover:bg-sky-400 transition-colors"
+                       >
+                         Install
+                       </button>
+                       <button
+                         onClick={handleDismissInstall}
+                         className="p-1.5 text-sky-300 hover:text-white hover:bg-sky-800/50 rounded-full transition-colors"
+                         aria-label="Dismiss install banner"
+                       >
+                          <CloseIcon className="w-5 h-5" />
+                       </button>
+                    </div>
+                  </div>
+                )}
                 {image && (
                   <div className="relative inline-block mb-2 ml-2">
                     <img src={image} alt="Upload preview" className="w-20 h-20 object-cover rounded-md border-2 border-[var(--surface-border)]" />
