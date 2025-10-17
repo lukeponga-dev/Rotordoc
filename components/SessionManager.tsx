@@ -195,7 +195,7 @@ export const useChatManager = () => {
       }
     } catch (error) {
       console.error("Error sending message:", error);
-      let displayMessage = "Sorry, I'm having trouble connecting. Please try again later.";
+      let displayMessage = "There was an unexpected error.";
       if (error && typeof error === 'object') {
         const errorMessage = ((error as Error).message || '').toLowerCase();
         if (!navigator.onLine) {

@@ -1,12 +1,15 @@
-# Exported from Render on 2025-10-17T07:34:25Z
-version: "1"
+# RotorWise AI Deployment Configuration for Render
+
 services:
-- type: web
-  name: rotorwiseAI
-  runtime: node
-  repo: https://github.com/lukeponga-dev/rotorwiseAI
-  plan: free
-  region: oregon
-  buildCommand: npm install; npm build
-  startCommand: npm run dev
-  autoDeployTrigger: commit
+  - type: web
+    name: rotorwise-ai
+    env: static
+    staticPublishPath: "./"
+    envVars:
+      - key: API_KEY
+        sync: false  # Set manually in Render dashboard
+
+    headers:
+      - path: "/*"
+        name: "Cache-Control"
+        value: "no-cache, no-store, must-revalidate"
