@@ -31,8 +31,23 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSpeak, onCa
     } else {
       // Strip markdown for cleaner speech
       const cleanText = message.content
-        .replace(/### |#### |✅|\||---|\*|`|🔩|🔧|⚠️/g, '')
-        .replace(/(\r\n|\n|\r)/gm, " ");
+        // Remove headings
+        .replace(/^#+\s+/gm, '')
+        // Remove horizontal rules and list markers
+        .replace(/^(---|\*|\d+\.)\s*/gm, '')
+        // Remove images
+        .replace(/!\[.*?\]\(.*?\)/g, '')
+        // Remove links, keeping the text
+        .replace(/\[([^\]]+)\]\(.*?\)/g, '$1')
+        // Remove bold, italics, and code markers
+        .replace(/(\*\*|__|\*|_|`)/g, '')
+        // Remove table pipes
+        .replace(/\|/g, ' ')
+        // Remove custom emojis/icons
+        .replace(/(✅|🔩|🔧|⚠️)/g, '')
+        // Consolidate whitespace
+        .replace(/\s+/g, ' ')
+        .trim();
       onSpeak(cleanText, message.id);
     }
   };

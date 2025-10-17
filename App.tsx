@@ -2,12 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useChatManager } from './components/SessionManager';
 import { ChatMessage } from './components/ChatMessage';
 import { SuggestionPills } from './components/SuggestionPills';
-import { SendIcon, ExportIcon, RotorWiseIcon, MenuIcon, PaperclipIcon, MicrophoneIcon, CloseIcon, BookOpenIcon, SettingsIcon, InstallIcon } from './components/Icons';
+import { SendIcon, ExportIcon, RotorWiseIcon, MenuIcon, PaperclipIcon, MicrophoneIcon, CloseIcon, BookOpenIcon, InstallIcon } from './components/Icons';
 import { Sidebar } from './components/Sidebar';
 import { exportToPDF } from './utils/export';
 import { Session } from './types';
 import { WorkshopGuide } from './components/WorkshopGuide';
-import { SettingsModal } from './components/SettingsModal';
 import { useTextToSpeech } from './hooks/useTextToSpeech';
 
 // Fix: Define SpeechRecognition interface to fix TypeScript error.
@@ -32,13 +31,12 @@ declare global {
 }
 
 const App: React.FC = () => {
-  const { messages, isLoading, sendMessage, setHistory, startNewChat, apiKey, setApiKey } = useChatManager();
+  const { messages, isLoading, sendMessage, setHistory, startNewChat } = useChatManager();
   const [input, setInput] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<'chat' | 'guide'>('chat');
   const [installPrompt, setInstallPrompt] = useState<any | null>(null);
@@ -212,24 +210,16 @@ const App: React.FC = () => {
     setInstallPrompt(null);
   };
 
-  const isChatDisabled = isLoading || !apiKey;
+  const isChatDisabled = isLoading;
 
   const placeholderText = isListening 
     ? "Listening..." 
     : image 
     ? "Describe the attached image or ask a question..." 
-    : !apiKey
-    ? "Please set your API key in Settings..."
     : "Describe your RX-8 issue, e.g., 'rough idle when warm'...";
 
   return (
     <div className="flex h-screen bg-transparent text-[var(--text-primary)] font-sans">
-      <SettingsModal 
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        onSave={setApiKey}
-        currentApiKey={apiKey}
-      />
       <Sidebar
         sessions={sessions}
         activeSessionId={activeSessionId}
@@ -277,14 +267,6 @@ const App: React.FC = () => {
                   </button>
                 )}
                 <button
-                  onClick={() => setIsSettingsOpen(true)}
-                  className="flex items-center p-2 sm:px-4 sm:space-x-2 bg-slate-800/70 border border-[var(--surface-border)] rounded-md text-sm text-slate-300 hover:bg-slate-700/80 hover:border-slate-600 transition-colors"
-                  aria-label="Settings"
-                >
-                  <SettingsIcon className="w-5 h-5" />
-                  <span className="hidden sm:inline">Settings</span>
-                </button>
-                <button
                   onClick={() => setCurrentView('guide')}
                   className="hidden sm:flex items-center space-x-2 px-3 sm:px-4 py-2 bg-slate-800/70 border border-[var(--surface-border)] rounded-md text-sm text-slate-300 hover:bg-slate-700/80 hover:border-slate-600 transition-colors"
                 >
@@ -303,7 +285,7 @@ const App: React.FC = () => {
             </header>
 
             <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 sm:space-y-8 custom-scrollbar">
-              {messages.length === 0 && !isLoading && apiKey ? (
+              {messages.length === 0 && !isLoading ? (
                 <SuggestionPills onSuggestionClick={handleSuggestionClick} />
               ) : (
                 messages.map((msg) => (
@@ -341,13 +323,12 @@ const App: React.FC = () => {
                   <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isChatDisabled} className="p-2 text-[var(--text-secondary)] hover:text-[var(--accent-secondary)] disabled:text-slate-600 disabled:cursor-not-allowed transition-colors rounded-full">
                     <PaperclipIcon className="w-6 h-6" />
                   </button>
-                  <input
-                    type="text"
+                  <textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                     placeholder={placeholderText}
-                    className="flex-1 w-full bg-transparent p-2 text-sm sm:text-base text-slate-200 placeholder-slate-500 focus:outline-none"
+                    className="flex-1 w-full bg-transparent p-2 text-sm sm:text-base text-slate-200 placeholder-slate-500 focus:outline-none resize-none custom-scrollbar"
                     disabled={isChatDisabled}
                     rows={1}
                   />
