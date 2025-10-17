@@ -3,13 +3,6 @@ import { GoogleGenAI } from '@google/genai';
 import { Message } from '../types';
 import { TROUBLESHOOTING_DATA } from '../data/troubleshootingData';
 
-// Extend the window interface for the API key
-declare global {
-  interface Window {
-    GEMINI_API_KEY: string;
-  }
-}
-
 const systemInstruction = `
 **Persona and Expertise:**
 You are RotorWise, an expert AI Mechanic specializing *exclusively* in the Mazda RX-8 (Series 1 and Series 2) and its 13B-MSP Renesis rotary engine. You can analyze both text descriptions and uploaded images of parts, error codes, or symptoms. Your goal is to accurately diagnose mechanical and electrical issues, provide step-by-step troubleshooting, and suggest appropriate repair procedures. Your tone must be professional, meticulous, and encouraging.
@@ -91,28 +84,64 @@ const messageToContent = (messages: Message[]) => {
   }).filter(c => c.parts.length > 0);
 };
 
+const getApiKey = (): string | null => {
+  try {
+    return localStorage.getItem('gemini_api_key');
+  } catch (e) {
+    console.error("Could not access localStorage", e);
+    return null;
+  }
+}
+
+const setApiKeyInStorage = (key: string) => {
+  try {
+    localStorage.setItem('gemini_api_key', key);
+  } catch (e) {
+    console.error("Could not access localStorage", e);
+  }
+}
+
 export const useChatManager = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isApiConfigured, setIsApiConfigured] = useState(false);
+  const [apiKey, setApiKey] = useState<string | null>(null);
   const aiRef = useRef<GoogleGenAI | null>(null);
 
-  useEffect(() => {
-    const apiKey = window.GEMINI_API_KEY;
-    if (apiKey && apiKey !== '__GEMINI_API_KEY__') {
-      aiRef.current = new GoogleGenAI({ apiKey });
-      setIsApiConfigured(true);
+  const reinitializeAiClient = useCallback((key: string | null) => {
+    if (key) {
+      try {
+        aiRef.current = new GoogleGenAI({ apiKey: key });
+        return true;
+      } catch (error) {
+        console.error("Failed to initialize GoogleGenAI:", error);
+        aiRef.current = null;
+        return false;
+      }
     } else {
-      console.error("API Key not found or is a placeholder. Please configure it for deployment.");
-      setIsApiConfigured(false);
+      aiRef.current = null;
+      return false;
+    }
+  }, []);
+
+  useEffect(() => {
+    const initialKey = getApiKey();
+    setApiKey(initialKey);
+    if (!reinitializeAiClient(initialKey)) {
       setMessages([{
         id: `error-init-${Date.now()}`,
         role: 'model',
-        content: "### Configuration Error\n\nThe application's API key is missing or invalid. The chat service is currently unavailable. Please contact the site administrator to resolve this issue.",
+        content: "### Welcome to RotorWise AI\n\nTo get started, please configure your Google Gemini API key in the settings. You can access settings via the gear icon in the header.",
         isError: true,
       }]);
     }
-  }, []);
+  }, [reinitializeAiClient]);
+
+  const setApiKeyAndReinitialize = useCallback((newKey: string) => {
+    setApiKeyInStorage(newKey);
+    setApiKey(newKey);
+    reinitializeAiClient(newKey);
+    setMessages(prev => prev.filter(m => !m.id.startsWith('error-init')));
+  }, [reinitializeAiClient]);
 
   const setHistory = useCallback((history: Message[]) => {
     const historyWithIds = history.map((msg, index) => ({
@@ -123,13 +152,12 @@ export const useChatManager = () => {
   }, []);
 
   const startNewChat = useCallback(() => {
-    // Do not clear the error message if the API is not configured.
-    if (!isApiConfigured) return;
+    if (!apiKey) return;
     setMessages([]);
-  }, [isApiConfigured]);
+  }, [apiKey]);
 
   const sendMessage = useCallback(async (text: string, imageUrl?: string | null) => {
-    if (!isApiConfigured || (!text.trim() && !imageUrl)) return;
+    if (!apiKey || (!text.trim() && !imageUrl)) return;
 
     setIsLoading(true);
     const userMessage: Message = { id: `user-${Date.now()}`, role: 'user', content: text, imageUrl: imageUrl || undefined };
@@ -144,7 +172,7 @@ export const useChatManager = () => {
 
     try {
       if (!aiRef.current) {
-        throw new Error("Gemini AI client is not initialized.");
+        throw new Error("Gemini AI client is not initialized. Please configure your API key in settings.");
       }
 
       const responseStream = await aiRef.current.models.generateContentStream({
@@ -173,18 +201,18 @@ export const useChatManager = () => {
         if (!navigator.onLine) {
             displayMessage = "You appear to be offline. Please check your internet connection.";
         } else if (errorMessage.includes('api key not valid')) {
-            displayMessage = "There's an issue with the API configuration. Please ensure the API key is valid.";
+            displayMessage = "Your API key appears to be invalid. Please check it in the settings and try again.";
         } else if (errorMessage.includes('rate limit')) {
             displayMessage = "The AI is currently busy due to high traffic. Please wait a moment before trying again.";
         } else if (errorMessage.includes('400')) {
-             displayMessage = "The request was invalid, which may be a bug. Please try rephrasing your message.";
+             displayMessage = "The request was invalid. Please try rephrasing your message or check your API key.";
         } else if (errorMessage.includes('500') || errorMessage.includes('internal')) {
              displayMessage = "The AI service is experiencing a temporary issue. Please try again in a few moments.";
         } else if (errorMessage.includes('fetch') || errorMessage.includes('network')) {
              displayMessage = "A network error occurred. Please check your internet connection and try again.";
         }
       }
-      const errorMessage: Message = { id: `error-${Date.now()}`, role: 'model', content: displayMessage, isError: true };
+      const errorMessage: Message = { id: `error-${Date.now()}`, role: 'model', content: `### Error\n\n${displayMessage}`, isError: true };
       setMessages(prev => {
         const newMessages = [...prev];
         if (newMessages.length > 0 && newMessages[newMessages.length - 1].role === 'model') {
@@ -197,7 +225,15 @@ export const useChatManager = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, isApiConfigured]);
+  }, [messages, apiKey]);
 
-  return { messages, isLoading, sendMessage, setHistory, startNewChat };
+  return { 
+    messages, 
+    isLoading, 
+    sendMessage, 
+    setHistory, 
+    startNewChat, 
+    apiKey, 
+    setApiKey: setApiKeyAndReinitialize 
+  };
 };

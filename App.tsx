@@ -2,11 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useChatManager } from './components/SessionManager';
 import { ChatMessage } from './components/ChatMessage';
 import { SuggestionPills } from './components/SuggestionPills';
-import { SendIcon, ExportIcon, RotorWiseIcon, MenuIcon, PaperclipIcon, MicrophoneIcon, CloseIcon, BookOpenIcon } from './components/Icons';
+import { SendIcon, ExportIcon, RotorWiseIcon, MenuIcon, PaperclipIcon, MicrophoneIcon, CloseIcon, BookOpenIcon, SettingsIcon } from './components/Icons';
 import { Sidebar } from './components/Sidebar';
 import { exportToPDF } from './utils/export';
 import { Session } from './types';
 import { WorkshopGuide } from './components/WorkshopGuide';
+import { SettingsModal } from './components/SettingsModal';
 import { useTextToSpeech } from './hooks/useTextToSpeech';
 
 // Fix: Define SpeechRecognition interface to fix TypeScript error.
@@ -31,12 +32,13 @@ declare global {
 }
 
 const App: React.FC = () => {
-  const { messages, isLoading, sendMessage, setHistory, startNewChat } = useChatManager();
+  const { messages, isLoading, sendMessage, setHistory, startNewChat, apiKey, setApiKey } = useChatManager();
   const [input, setInput] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<'chat' | 'guide'>('chat');
   
@@ -177,28 +179,37 @@ const App: React.FC = () => {
     }
   };
 
+  const isChatDisabled = isLoading || !apiKey;
+
   const placeholderText = isListening 
     ? "Listening..." 
     : image 
     ? "Describe the attached image or ask a question..." 
+    : !apiKey
+    ? "Please set your API key in Settings..."
     : "Describe your RX-8 issue, e.g., 'rough idle when warm'...";
 
   return (
     <div className="flex h-screen bg-transparent text-[var(--text-primary)] font-sans">
-        <Sidebar
-          sessions={sessions}
-          activeSessionId={activeSessionId}
-          isOpen={isSidebarOpen}
-          messages={messages}
-          isLoading={isLoading}
-          onClose={() => setIsSidebarOpen(false)}
-          onNewChat={handleNewChat}
-          onLoadSession={loadSession}
-          onDeleteSession={deleteSession}
-          onSaveSession={saveSession}
-          onExport={handleExport}
-        />
-
+      <SettingsModal 
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        onSave={setApiKey}
+        currentApiKey={apiKey}
+      />
+      <Sidebar
+        sessions={sessions}
+        activeSessionId={activeSessionId}
+        isOpen={isSidebarOpen}
+        messages={messages}
+        isLoading={isLoading}
+        onClose={() => setIsSidebarOpen(false)}
+        onNewChat={handleNewChat}
+        onLoadSession={loadSession}
+        onDeleteSession={deleteSession}
+        onSaveSession={saveSession}
+        onExport={handleExport}
+      />
       {currentView === 'guide' ? (
         <WorkshopGuide onClose={() => setCurrentView('chat')} />
       ) : (
@@ -220,7 +231,15 @@ const App: React.FC = () => {
               </div>
               
               <div className="flex items-center space-x-2">
-                 <button
+                <button
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="flex items-center p-2 sm:px-4 sm:space-x-2 bg-slate-800/70 border border-[var(--surface-border)] rounded-md text-sm text-slate-300 hover:bg-slate-700/80 hover:border-slate-600 transition-colors"
+                  aria-label="Settings"
+                >
+                  <SettingsIcon className="w-5 h-5" />
+                  <span className="hidden sm:inline">Settings</span>
+                </button>
+                <button
                   onClick={() => setCurrentView('guide')}
                   className="hidden sm:flex items-center space-x-2 px-3 sm:px-4 py-2 bg-slate-800/70 border border-[var(--surface-border)] rounded-md text-sm text-slate-300 hover:bg-slate-700/80 hover:border-slate-600 transition-colors"
                 >
@@ -239,7 +258,7 @@ const App: React.FC = () => {
             </header>
 
             <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 sm:space-y-8 custom-scrollbar">
-              {messages.length === 0 && !isLoading ? (
+              {messages.length === 0 && !isLoading && apiKey ? (
                 <SuggestionPills onSuggestionClick={handleSuggestionClick} />
               ) : (
                 messages.map((msg) => (
@@ -272,9 +291,9 @@ const App: React.FC = () => {
                     </button>
                   </div>
                 )}
-                <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex items-center space-x-2 sm:space-x-3 bg-slate-800/80 rounded-xl border border-[var(--surface-border)] focus-within:ring-2 focus-within:ring-[var(--accent-primary)] transition-shadow p-1">
+                <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className={`flex items-center space-x-2 sm:space-x-3 bg-slate-800/80 rounded-xl border border-[var(--surface-border)] focus-within:ring-2 focus-within:ring-[var(--accent-primary)] transition-shadow p-1 ${isChatDisabled ? 'opacity-60' : ''}`}>
                   <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
-                  <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isLoading} className="p-2 text-[var(--text-secondary)] hover:text-[var(--accent-secondary)] disabled:text-slate-600 disabled:cursor-not-allowed transition-colors rounded-full">
+                  <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isChatDisabled} className="p-2 text-[var(--text-secondary)] hover:text-[var(--accent-secondary)] disabled:text-slate-600 disabled:cursor-not-allowed transition-colors rounded-full">
                     <PaperclipIcon className="w-6 h-6" />
                   </button>
                   <input
@@ -284,18 +303,18 @@ const App: React.FC = () => {
                     onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                     placeholder={placeholderText}
                     className="flex-1 w-full bg-transparent p-2 text-sm sm:text-base text-slate-200 placeholder-slate-500 focus:outline-none"
-                    disabled={isLoading}
+                    disabled={isChatDisabled}
                     rows={1}
                   />
                   <div className="relative flex items-center">
-                    <button type="button" onClick={toggleListening} disabled={isLoading} className="p-2 text-[var(--text-secondary)] hover:text-[var(--accent-secondary)] disabled:text-slate-600 disabled:cursor-not-allowed transition-colors rounded-full">
+                    <button type="button" onClick={toggleListening} disabled={isChatDisabled} className="p-2 text-[var(--text-secondary)] hover:text-[var(--accent-secondary)] disabled:text-slate-600 disabled:cursor-not-allowed transition-colors rounded-full">
                        <MicrophoneIcon className={`w-6 h-6 ${isListening ? 'text-[var(--accent-primary)]' : ''}`} />
                     </button>
                     {isListening && <div className="absolute inset-0 pulse-ring-animation" aria-hidden="true"></div>}
                   </div>
                   <button
                     type="submit"
-                    disabled={isLoading || (!input.trim() && !image)}
+                    disabled={isChatDisabled || (!input.trim() && !image)}
                     className="p-3 bg-[var(--accent-primary)] text-white rounded-lg disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed hover:bg-orange-500 transition-colors"
                     aria-label="Send message"
                   >

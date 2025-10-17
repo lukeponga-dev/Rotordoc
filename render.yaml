@@ -4,8 +4,6 @@ services:
   - type: web
     name: rotorwise-ai
     env: static
-    buildCommand: >
-      node -e "let f = 'index.html'; require('fs').writeFileSync(f, require('fs').readFileSync(f, 'utf8').replace('__GEMINI_API_KEY__', process.env.API_KEY))"
     staticPublishPath: "./"
     envVars:
       - key: API_KEY
