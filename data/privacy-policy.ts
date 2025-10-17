@@ -1,4 +1,3 @@
-
 export const PRIVACY_POLICY_TEXT = `
 # 🔐 Privacy Policy for RotaryAI – RX-8 Mechanic
 
