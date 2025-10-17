@@ -141,6 +141,10 @@
     .prose th, .prose td {
       border: 1px solid var(--surface-border);
       padding: 0.6rem 0.8rem;
+      text-align: left;
+    }
+    .prose td p {
+        margin: 0;
     }
 
     .prose thead th {
@@ -174,7 +178,23 @@
       font-weight: bold;
       font-size: 1.25rem;
     }
-    .prose ul li strong {
+    
+    .prose ol {
+      list-style-type: decimal;
+      padding-left: 1.75rem;
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+    }
+    .prose ol li {
+      padding-left: 0.25rem;
+      margin-bottom: 0.6rem;
+    }
+    .prose ol li::marker {
+      color: var(--accent-secondary);
+      font-weight: 600;
+    }
+
+    .prose ul li strong, .prose ol li strong {
       color: var(--text-primary);
       font-weight: 600;
     }

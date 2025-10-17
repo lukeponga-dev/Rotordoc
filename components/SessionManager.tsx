@@ -116,41 +116,44 @@ const messageToContent = (messages: Message[]) => {
 
 // Helper function to parse the error and return a user-friendly message.
 const getDisplayErrorMessage = (error: unknown): string => {
-  // Prioritize checking for offline status
+  // Prioritize checking for offline status, as it's a common client-side issue.
   if (!navigator.onLine) {
-    return "You appear to be offline. Please check your internet connection.";
+    return "Connection Error: You appear to be offline. Please check your internet connection and try again.";
   }
 
   // Check for specific API/network errors from the error message
   if (error && typeof error === 'object' && 'message' in error) {
     const errorMessage = ((error as Error).message || '').toLowerCase();
 
+    // Specific Gemini API errors
     if (errorMessage.includes('api key not valid')) {
-      return "The provided API key is invalid. Please check the key in the settings and try again.";
+      return "Authentication Error: The provided API key is invalid. Please go to Settings to verify your key.";
     }
     if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
-      return "The AI is currently busy due to high traffic. Please wait a moment before trying again.";
+      return "Request Limit Reached: The service is experiencing high traffic. Please wait a few moments before sending another message.";
     }
-    // A 400 error can also indicate a safety block.
     if (errorMessage.includes('400')) {
-      return "The request was invalid. This can happen due to a safety policy violation or an unsupported prompt. Please try rephrasing your message.";
+        // A 400 error can indicate a safety block or other malformed request.
+        return "Invalid Request: Your message may have been blocked due to safety policies or contained unsupported content. Please try rephrasing your prompt.";
     }
     if (errorMessage.includes('500') || errorMessage.includes('internal') || errorMessage.includes('503')) {
-      return "The AI service is experiencing a temporary issue. Please try again in a few moments.";
+      return "Service Unavailable: The AI service is currently experiencing technical difficulties. Please try again later.";
     }
-    // Generic network-related errors
-    if (errorMessage.includes('fetch') || errorMessage.includes('network')) {
-      return "A network error occurred, preventing the request from completing. Please check your internet connection and try again.";
+    
+    // Generic network-related errors that might not be caught by navigator.onLine
+    if (errorMessage.includes('fetch failed') || errorMessage.includes('networkerror')) {
+      return "Network Error: Could not connect to the AI service. Please check your internet connection and firewall settings.";
     }
   }
 
-  // Fallback for any other unexpected errors
-  return "An unexpected error occurred. Please check the developer console for more details and try again later.";
+  // Fallback for any other unexpected errors. This is important for debugging.
+  console.error("An unhandled error occurred:", error);
+  return "An unexpected error occurred. We've logged the issue. Please try again later or contact support if the problem persists.";
 };
 
 export const useChatManager = (apiKey: string) => {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [loadingState, setLoadingState] = useState<'idle' | 'processing' | 'streaming'>('idle');
+  const [loadingState, setLoadingState] = useState<'idle' | 'thinking' | 'streaming'>('idle');
   
   const ai = useMemo(() => {
     if (!apiKey) {
@@ -210,7 +213,7 @@ export const useChatManager = (apiKey: string) => {
   const sendMessage = useCallback(async (text: string, imageUrl?: string | null, videoUrl?: string | null) => {
     if (loadingState !== 'idle' || !ai || (!text.trim() && !imageUrl && !videoUrl)) return;
 
-    setLoadingState('processing');
+    setLoadingState('thinking');
     const userMessage: Message = { 
       id: `user-${Date.now()}`, 
       role: 'user', 
@@ -229,7 +232,7 @@ export const useChatManager = (apiKey: string) => {
 
     try {
       const responseStream = await ai.models.generateContentStream({
-        model: 'gemini-2.5-pro',
+        model: 'gemini-flash-latest',
         contents,
         config: { systemInstruction },
       });

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useChatManager } from './components/SessionManager';
 import { ChatMessage } from './components/ChatMessage';
@@ -280,7 +281,7 @@ const App: React.FC = () => {
     : isListening
     ? "Listening..."
     : isChatDisabled
-    ? (loadingState === 'processing' ? 'RotorWise is thinking...' : 'Generating response...')
+    ? (loadingState === 'thinking' ? 'RotorWise is thinking...' : 'Generating response...')
     : image
     ? "Describe the attached image or ask a question..."
     : video
