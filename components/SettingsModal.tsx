@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { CloseIcon, RotorWiseIcon } from './Icons';
 
@@ -7,9 +6,10 @@ interface SettingsModalProps {
   onClose: () => void;
   apiKey: string;
   onSaveApiKey: (key: string) => void;
+  onOpenPrivacyPolicy: () => void;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, apiKey, onSaveApiKey }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, apiKey, onSaveApiKey, onOpenPrivacyPolicy }) => {
   const [localApiKey, setLocalApiKey] = useState(apiKey);
 
   useEffect(() => {
@@ -92,6 +92,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, a
               Save and Continue
             </button>
         </form>
+
+        <div className="mt-6 text-center">
+            <button
+                type="button"
+                onClick={onOpenPrivacyPolicy}
+                className="text-xs text-slate-500 hover:text-[var(--accent-secondary)] underline transition-colors"
+            >
+                View Privacy Policy
+            </button>
+        </div>
       </div>
     </div>
   );
