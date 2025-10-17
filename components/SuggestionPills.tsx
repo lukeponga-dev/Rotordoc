@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { RotorWiseIcon, MechanicalIcon, WarningLightIcon, DrivetrainIcon, ElectricalIcon } from './Icons';
 
@@ -64,7 +65,7 @@ export const SuggestionPills: React.FC<SuggestionPillsProps> = ({ onSuggestionCl
         
         <div className="w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4">
             {suggestionCategories.map(({ category, icon: Icon, suggestions }) => (
-                <div key={category} className="text-left bg-slate-800/50 p-4 rounded-lg border border-[var(--surface-border)] hover:border-slate-600 transition-colors">
+                <div key={category} className="text-left bg-gradient-to-br from-slate-800/50 to-slate-900/50 p-4 rounded-lg border border-[var(--surface-border)] hover:border-slate-600 hover:shadow-lg transition-all duration-300">
                     <div className="flex items-center mb-4">
                         <Icon className="w-6 h-6 mr-3 text-[var(--accent-secondary)]" />
                         <h3 className="text-lg font-semibold font-display text-slate-200">{category}</h3>

@@ -1,16 +1,29 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { CloseIcon, RotorWiseIcon } from './Icons';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  apiKey: string;
+  onSaveApiKey: (key: string) => void;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, apiKey, onSaveApiKey }) => {
+  const [localApiKey, setLocalApiKey] = useState(apiKey);
+
+  useEffect(() => {
+    setLocalApiKey(apiKey);
+  }, [apiKey, isOpen]);
+
   if (!isOpen) {
     return null;
   }
+  
+  const handleSave = () => {
+    onSaveApiKey(localApiKey);
+    onClose();
+  };
 
   return (
     <div
@@ -36,40 +49,49 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             <div>
               <h2 className="text-xl font-bold font-display text-slate-100 mb-1">API Key Configuration</h2>
               <p className="text-sm text-slate-400">
-                This application follows security best practices by managing the API key in a secure, server-side environment.
+                To use RotorWise AI, you need a Google Gemini API key.
               </p>
             </div>
         </div>
         
-        <div className="space-y-4">
+        <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-4">
             <div>
                 <label htmlFor="api-key-input" className="block text-sm font-medium text-slate-300">
-                    Gemini API Key Status
+                    Your Google Gemini API Key
                 </label>
                 <input
                     id="api-key-input"
-                    type="text"
-                    disabled
-                    value="••••••••••••••••••••••••••••• Managed by environment"
-                    className="mt-1 w-full bg-slate-800/80 rounded-md border border-[var(--surface-border)] px-3 py-2 text-sm text-slate-400 placeholder-slate-500 focus:outline-none cursor-not-allowed"
-                    aria-readonly="true"
+                    type="password"
+                    value={localApiKey}
+                    onChange={(e) => setLocalApiKey(e.target.value)}
+                    placeholder="Enter your API key here..."
+                    className="mt-1 w-full bg-slate-800/80 rounded-md border border-[var(--surface-border)] px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-[var(--accent-primary)]"
+                    required
                 />
             </div>
 
             <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-lg">
-                <h3 className="font-semibold text-slate-200">Why can't I change the key here?</h3>
-                <p className="text-xs text-slate-400 mt-2">
-                    To protect your account and prevent security risks, API keys should never be exposed or entered directly into a web application's frontend. This app's API key is securely injected from the environment, which is the industry-standard approach for handling sensitive credentials.
+                <p className="text-xs text-slate-400">
+                    Your API key is stored securely in your browser's local storage and is never sent to our servers. You can get a free API key from{' '}
+                    <a
+                        href="https://aistudio.google.com/app/apikey"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[var(--accent-secondary)] font-medium hover:underline"
+                    >
+                        Google AI Studio
+                    </a>.
                 </p>
             </div>
-        </div>
-
-        <button
-            onClick={onClose}
-            className="mt-8 w-full px-4 py-2.5 bg-[var(--accent-primary)] text-white rounded-md text-sm font-semibold hover:bg-orange-500 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--surface-1)] focus:ring-[var(--accent-primary)]"
-        >
-            I Understand
-        </button>
+            
+            <button
+              type="submit"
+              className="w-full px-4 py-2.5 bg-[var(--accent-primary)] text-white rounded-md text-sm font-semibold hover:bg-orange-500 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--surface-1)] focus:ring-[var(--accent-primary)] disabled:opacity-50"
+              disabled={!localApiKey.trim()}
+            >
+              Save and Continue
+            </button>
+        </form>
       </div>
     </div>
   );
