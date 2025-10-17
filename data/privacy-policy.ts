@@ -1,37 +1,70 @@
 export const PRIVACY_POLICY_TEXT = `
-# 🔐 Privacy Policy for RotaryAI – RX-8 Mechanic
+# 🔐 Privacy Policy – RotaryAI RX-8 Mechanic
 
-**Effective Date:** [17/10/25]
-**Last Updated:** [17/10/25]
+**Effective Date:** October 18, 2025  
+**Developer:** Luke Ponga  
+**Contact:** support@rotaryai.com
 
-## 1. Introduction
-RotaryAI – RX-8 Mechanic is committed to protecting your privacy. This policy explains how we collect, use, and safeguard your data when you use our app.
+---
 
-## 2. Data We Collect
-We may collect the following types of data:
-- Diagnostic inputs (e.g., symptoms, severity ratings)
-- Device information (e.g., model, OS version)
-- Usage analytics (e.g., feature interactions, error logs)
+## 1. 📋 Data Collection
 
-We do not collect personal identifiers such as name, email, or location unless explicitly provided.
+We collect the following data to provide AI-powered diagnostics and export features:
 
-## 3. How We Use Your Data
-- To generate AI-powered diagnostics and suggestions
-- To improve app performance and user experience
-- To monitor and fix bugs or crashes
+- User-submitted symptoms and chat logs
+- Diagnostic session summaries
+- Optional VIN and vehicle details
+- Uploaded images (e.g., part photos)
 
-## 4. Data Sharing
-We do not sell or share your data with third parties. Data may be processed by secure third-party services (e.g., Firebase, Gemini API) strictly for app functionality.
+---
 
-## 5. Children's Privacy
-This app is not intended for children under 13. We do not knowingly collect data from children.
+## 2. 🔒 Data Usage
 
-## 6. Security
-We implement industry-standard security measures to protect your data, including encrypted API communication and secure storage practices.
+Collected data is used to:
 
-## 7. Your Rights
-You may request deletion of your data or opt out of analytics by contacting us at: [Insert Contact Email]
+- Generate AI-based mechanical insights
+- Score issue severity
+- Create exportable summaries (PDF, CSV, Markdown)
+- Improve app functionality and user experience
 
-## 8. Changes to This Policy
-We may update this policy from time to time. Changes will be posted within the app and on our website.
+We do not sell or share personal data with third parties.
+
+---
+
+## 3. 📤 Data Sharing
+
+Data is only shared:
+
+- With the user via export/download
+- With authorized mechanics (if role-based access is enabled)
+
+---
+
+## 4. 🔐 Permissions
+
+We request access to:
+
+- **Storage:** For image uploads and exports.
+- **Internet:** For AI processing and updates.
+
+Permissions are only requested when needed and are explained in-app.
+
+---
+
+## 5. 🔁 Data Retention & Deletion
+
+- Session data is retained for diagnostic history unless deleted by the user.
+- Users may request deletion of their data by contacting us.
+
+---
+
+## 6. 🧪 Third-Party Services
+
+We use the Google Gemini API for AI responses. No personal data is shared with Google beyond the diagnostic context required for the AI to function.
+
+---
+
+## 7. 📱 Security
+
+All data is transmitted securely using HTTPS. We follow best practices for Firestore security rules and API key management.
 `;
