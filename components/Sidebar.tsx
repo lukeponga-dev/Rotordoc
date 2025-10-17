@@ -49,7 +49,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         className={`fixed top-0 left-0 h-full w-64 bg-[var(--surface-1)]/80 backdrop-blur-md border-r border-[var(--surface-border)] flex flex-col z-40 transition-transform transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 md:w-72 md:flex-shrink-0`}
       >
         <div className="flex items-center justify-between p-4 border-b border-[var(--surface-border)]">
-          <h2 className="text-lg font-semibold font-display text-slate-200">Chat History</h2>
+          <h2 className="text-lg font-semibold font-display text-slate-200">RotorWise AI</h2>
           <button 
             onClick={onNewChat} 
             title="New Chat"
@@ -62,43 +62,46 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto p-2 custom-scrollbar">
-          <ul className="space-y-1">
-            {sessions.map((session) => (
-              <li key={session.id}>
-                <button
-                  onClick={() => onLoadSession(session.id)}
-                  className={`w-full text-left flex items-center justify-between p-2.5 rounded-md text-sm transition-colors group ${
-                    activeSessionId === session.id
-                      ? 'bg-slate-700/50 text-white shadow-inner'
-                      : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
-                  }`}
-                >
-                  <span className="truncate flex-1 pr-2">{session.name}</span>
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex-1 flex flex-col overflow-y-auto custom-scrollbar">
+            <h3 className="px-4 pt-4 pb-2 text-sm font-semibold text-slate-500">Saved Sessions</h3>
+            <nav className="flex-1 p-2">
+              <ul className="space-y-1">
+                {sessions.map((session) => (
+                  <li key={session.id}>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (window.confirm('Are you sure you want to delete this session?')) {
-                          onDeleteSession(session.id);
-                        }
-                      }}
-                      className="p-1 text-slate-500 hover:text-red-400 rounded-full"
-                      aria-label={`Delete session ${session.name}`}
+                      onClick={() => onLoadSession(session.id)}
+                      className={`w-full text-left flex items-center justify-between p-2.5 rounded-md text-sm transition-all duration-200 group ${
+                        activeSessionId === session.id
+                          ? 'bg-slate-700/50 text-white shadow-inner border-l-2 border-[var(--accent-primary)] pl-2'
+                          : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+                      }`}
                     >
-                      <TrashIcon className="w-4 h-4" />
+                      <span className="truncate flex-1 pr-2">{session.name}</span>
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm('Are you sure you want to delete this session?')) {
+                              onDeleteSession(session.id);
+                            }
+                          }}
+                          className="p-1 text-slate-500 hover:text-red-400 rounded-full"
+                          aria-label={`Delete session ${session.name}`}
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                        </button>
+                      </div>
                     </button>
-                  </div>
-                </button>
-              </li>
-            ))}
-             {sessions.length === 0 && (
-                <div className="text-center text-slate-500 text-sm p-4">
-                    No saved sessions yet.
-                </div>
-             )}
-          </ul>
-        </nav>
+                  </li>
+                ))}
+                 {sessions.length === 0 && (
+                    <div className="text-center text-slate-500 text-sm p-4">
+                        No saved sessions yet.
+                    </div>
+                 )}
+              </ul>
+            </nav>
+        </div>
         
         <div className="p-4 border-t border-[var(--surface-border)] space-y-2">
            <button

@@ -26,8 +26,11 @@
 
     body {
       background-color: var(--background-dark);
-      background-image: radial-gradient(circle at 10% 10%, rgba(56, 189, 248, 0.08) 0%, transparent 30%),
-                        radial-gradient(circle at 90% 80%, rgba(255, 122, 0, 0.08) 0%, transparent 30%);
+      background-image: 
+        linear-gradient(rgba(56, 189, 248, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56, 189, 248, 0.05) 1px, transparent 1px);
+      background-size: 2rem 2rem;
+      background-position: center center;
       background-attachment: fixed;
       font-family: var(--font-sans);
       color: var(--text-primary);
@@ -181,6 +184,10 @@
         padding: 0.2em 0.4em;
         border-radius: 4px;
         font-size: 0.85em;
+    }
+    
+    .user-bubble p {
+        color: var(--text-primary);
     }
   </style>
 <script type="importmap">

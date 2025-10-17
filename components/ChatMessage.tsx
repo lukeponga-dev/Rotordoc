@@ -70,12 +70,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSpeak, onCa
 
   const renderUserContent = () => {
     return (
-      <div className="space-y-3">
+      <div className="space-y-3 user-bubble">
         {message.imageUrl && (
             <img 
                 src={message.imageUrl} 
                 alt="User upload" 
-                className="rounded-lg max-w-xs max-h-64 object-contain border border-indigo-900/50"
+                className="rounded-lg max-w-xs max-h-64 object-contain border border-orange-900/50"
             />
         )}
         {message.content && <p className="text-slate-100 text-sm sm:text-base">{message.content}</p>}
@@ -85,10 +85,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSpeak, onCa
 
   return (
     <div className={`flex items-start space-x-3 sm:space-x-4 chat-message-container group ${isModel ? '' : 'flex-row-reverse space-x-reverse'}`}>
-      <div className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shadow-md border ${isModel ? 'bg-slate-800 border-slate-700' : 'bg-indigo-600 border-indigo-500'}`}>
+      <div className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shadow-md border ${isModel ? 'bg-slate-800 border-slate-700' : 'bg-orange-600 border-orange-500'}`}>
         {isModel ? <RotorWiseIcon className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--accent-primary)]" /> : <UserIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />}
       </div>
-      <div className={`relative max-w-2xl w-full rounded-xl px-3 py-2 sm:px-4 sm:py-3 shadow-lg border ${isModel ? 'bg-slate-800/70 border-[var(--surface-border)]' : 'bg-gradient-to-br from-indigo-700 to-blue-800 border-indigo-700/50'}`}>
+      <div className={`relative max-w-2xl w-full rounded-xl px-3 py-2 sm:px-4 sm:py-3 shadow-lg border ${isModel ? 'bg-slate-800/70 border-[var(--surface-border)]' : 'bg-orange-600/20 border-orange-500/30'}`}>
         {isModel ? renderModelContent() : renderUserContent()}
         
         {isModel && message.content && !message.isError && (

@@ -247,6 +247,8 @@ const App: React.FC = () => {
     ? "Describe the attached image or ask a question..."
     : "Describe your RX-8 issue, e.g., 'rough idle when warm'...";
 
+  const activeSessionName = sessions.find(s => s.id === activeSessionId)?.name || 'New Diagnosis';
+
   return (
     <div className="flex h-screen bg-transparent text-[var(--text-primary)] font-sans">
       <Sidebar
@@ -280,7 +282,7 @@ const App: React.FC = () => {
                     <RotorWiseIcon className="w-8 h-8 sm:w-10 sm:h-10 text-[var(--accent-primary)]" />
                     <div>
                         <h1 className="text-lg sm:text-xl font-bold font-display text-slate-200 tracking-wide">RotorWise AI</h1>
-                        <p className="text-xs sm:text-sm text-slate-400">Your RX-8 AI Mechanic</p>
+                        <p className="text-xs sm:text-sm text-slate-400 truncate max-w-[150px] sm:max-w-xs">{activeSessionName}</p>
                     </div>
                 </div>
               </div>
