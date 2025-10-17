@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { Message } from '../types';
@@ -84,6 +85,40 @@ const messageToContent = (messages: Message[]) => {
   }).filter(c => c.parts.length > 0);
 };
 
+// Helper function to parse the error and return a user-friendly message.
+const getDisplayErrorMessage = (error: unknown): string => {
+  // Prioritize checking for offline status
+  if (!navigator.onLine) {
+    return "You appear to be offline. Please check your internet connection.";
+  }
+
+  // Check for specific API/network errors from the error message
+  if (error && typeof error === 'object' && 'message' in error) {
+    const errorMessage = ((error as Error).message || '').toLowerCase();
+
+    if (errorMessage.includes('api key not valid')) {
+      return "The configured API key is invalid. Please ensure it is correct and has the necessary permissions. You may need to contact the site administrator.";
+    }
+    if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
+      return "The AI is currently busy due to high traffic. Please wait a moment before trying again.";
+    }
+    // A 400 error can also indicate a safety block.
+    if (errorMessage.includes('400')) {
+      return "The request was invalid. This can happen due to a safety policy violation or an unsupported prompt. Please try rephrasing your message.";
+    }
+    if (errorMessage.includes('500') || errorMessage.includes('internal') || errorMessage.includes('503')) {
+      return "The AI service is experiencing a temporary issue. Please try again in a few moments.";
+    }
+    // Generic network-related errors
+    if (errorMessage.includes('fetch') || errorMessage.includes('network')) {
+      return "A network error occurred, preventing the request from completing. Please check your internet connection and try again.";
+    }
+  }
+
+  // Fallback for any other unexpected errors
+  return "An unexpected error occurred. Please check the developer console for more details and try again later.";
+};
+
 export const useChatManager = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -132,14 +167,14 @@ export const useChatManager = () => {
 
     setIsLoading(true);
     const userMessage: Message = { id: `user-${Date.now()}`, role: 'user', content: text, imageUrl: imageUrl || undefined };
-    const currentMessages = [...messages, userMessage];
-    setMessages(currentMessages);
     
     const modelMessageId = `model-${Date.now()}`;
     const tempModelMessage: Message = { id: modelMessageId, role: 'model', content: '' };
-    setMessages(prev => [...prev, tempModelMessage]);
+    
+    // Atomically add both user message and model placeholder
+    setMessages(prev => [...prev, userMessage, tempModelMessage]);
 
-    const contents = messageToContent(currentMessages);
+    const contents = messageToContent([...messages, userMessage]);
 
     try {
       if (!aiRef.current) {
@@ -155,44 +190,22 @@ export const useChatManager = () => {
       let modelResponse = '';
       for await (const chunk of responseStream) {
         modelResponse += chunk.text;
-        setMessages(prev => {
-          const newMessages = [...prev];
-          const lastMessage = newMessages[newMessages.length - 1];
-          if (lastMessage && lastMessage.role === 'model') {
-            newMessages[newMessages.length - 1] = { ...lastMessage, id: modelMessageId, content: modelResponse };
-          }
-          return newMessages;
-        });
+        setMessages(prev => prev.map(msg => 
+            msg.id === modelMessageId ? { ...msg, content: modelResponse } : msg
+        ));
       }
     } catch (error) {
       console.error("Error sending message:", error);
-      let displayMessage = "There was an unexpected error.";
-      if (error && typeof error === 'object') {
-        const errorMessage = ((error as Error).message || '').toLowerCase();
-        if (!navigator.onLine) {
-            displayMessage = "You appear to be offline. Please check your internet connection.";
-        } else if (errorMessage.includes('api key not valid')) {
-            displayMessage = "The configured API key appears to be invalid. Please contact the administrator.";
-        } else if (errorMessage.includes('rate limit')) {
-            displayMessage = "The AI is currently busy due to high traffic. Please wait a moment before trying again.";
-        } else if (errorMessage.includes('400')) {
-             displayMessage = "The request was invalid. Please try rephrasing your message.";
-        } else if (errorMessage.includes('500') || errorMessage.includes('internal')) {
-             displayMessage = "The AI service is experiencing a temporary issue. Please try again in a few moments.";
-        } else if (errorMessage.includes('fetch') || errorMessage.includes('network')) {
-             displayMessage = "A network error occurred. Please check your internet connection and try again.";
-        }
-      }
-      const errorMessage: Message = { id: `error-${Date.now()}`, role: 'model', content: `### Error\n\n${displayMessage}`, isError: true };
-      setMessages(prev => {
-        const newMessages = [...prev];
-        if (newMessages.length > 0 && newMessages[newMessages.length - 1].role === 'model') {
-          newMessages[newMessages.length - 1] = errorMessage;
-        } else {
-          newMessages.push(errorMessage);
-        }
-        return newMessages;
-      });
+      const displayMessage = getDisplayErrorMessage(error);
+      
+      const errorMessage: Message = { 
+        id: modelMessageId, // Reuse the ID to ensure it replaces the placeholder
+        role: 'model', 
+        content: `### ⚠️ Error\n\n${displayMessage}`, 
+        isError: true 
+      };
+
+      setMessages(prev => prev.map(msg => msg.id === modelMessageId ? errorMessage : msg));
     } finally {
       setIsLoading(false);
     }
