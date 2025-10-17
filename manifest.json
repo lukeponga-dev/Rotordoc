@@ -1,0 +1,17 @@
+{
+  "short_name": "RotorWise",
+  "name": "RotorWise AI",
+  "description": "An AI-powered diagnostic tool for Mazda RX-8 owners. Get expert advice on your rotary engine's problems from RotorWise AI.",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#FF7A00",
+  "background_color": "#0A0F1A"
+}

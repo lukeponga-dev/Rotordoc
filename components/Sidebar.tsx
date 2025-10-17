@@ -1,6 +1,6 @@
 import React from 'react';
 import { Session, Message } from '../types';
-import { PlusIcon, SaveIcon, TrashIcon, CloseIcon, ExportIcon, BookOpenIcon } from './Icons';
+import { PlusIcon, SaveIcon, TrashIcon, CloseIcon, ExportIcon, BookOpenIcon, InstallIcon } from './Icons';
 
 interface SidebarProps {
   sessions: Session[];
@@ -14,6 +14,8 @@ interface SidebarProps {
   onDeleteSession: (sessionId: string) => void;
   onSaveSession: () => void;
   onExport: () => void;
+  onInstall: () => void;
+  showInstallButton: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -27,7 +29,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLoadSession,
   onDeleteSession,
   onSaveSession,
-  onExport
+  onExport,
+  onInstall,
+  showInstallButton
 }) => {
   return (
     <>
@@ -95,6 +99,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
         
         <div className="p-4 border-t border-[var(--surface-border)] space-y-2">
+           {showInstallButton && (
+                <button
+                    onClick={onInstall}
+                    className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 bg-sky-600/80 border border-sky-500/80 rounded-md text-sm text-sky-100 hover:bg-sky-600 hover:border-sky-500 transition-colors"
+                >
+                    <InstallIcon className="w-5 h-5" />
+                    <span>Install App</span>
+                </button>
+            )}
           <button
             onClick={onSaveSession}
             disabled={messages.length === 0 || isLoading}

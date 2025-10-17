@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useChatManager } from './components/SessionManager';
 import { ChatMessage } from './components/ChatMessage';
 import { SuggestionPills } from './components/SuggestionPills';
-import { SendIcon, ExportIcon, RotorWiseIcon, MenuIcon, PaperclipIcon, MicrophoneIcon, CloseIcon, BookOpenIcon, SettingsIcon } from './components/Icons';
+import { SendIcon, ExportIcon, RotorWiseIcon, MenuIcon, PaperclipIcon, MicrophoneIcon, CloseIcon, BookOpenIcon, SettingsIcon, InstallIcon } from './components/Icons';
 import { Sidebar } from './components/Sidebar';
 import { exportToPDF } from './utils/export';
 import { Session } from './types';
@@ -41,6 +41,7 @@ const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<'chat' | 'guide'>('chat');
+  const [installPrompt, setInstallPrompt] = useState<any | null>(null);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -62,6 +63,26 @@ const App: React.FC = () => {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('Service Worker registered.', reg))
+            .catch(err => console.error('Service Worker registration failed.', err));
+        });
+    }
+
+    const handleBeforeInstallPrompt = (e: Event) => {
+        e.preventDefault();
+        setInstallPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
 
   useEffect(() => {
     const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -179,6 +200,18 @@ const App: React.FC = () => {
     }
   };
 
+  const handleInstallClick = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+    } else {
+        console.log('User dismissed the install prompt');
+    }
+    setInstallPrompt(null);
+  };
+
   const isChatDisabled = isLoading || !apiKey;
 
   const placeholderText = isListening 
@@ -209,6 +242,8 @@ const App: React.FC = () => {
         onDeleteSession={deleteSession}
         onSaveSession={saveSession}
         onExport={handleExport}
+        onInstall={handleInstallClick}
+        showInstallButton={!!installPrompt}
       />
       {currentView === 'guide' ? (
         <WorkshopGuide onClose={() => setCurrentView('chat')} />
@@ -231,6 +266,16 @@ const App: React.FC = () => {
               </div>
               
               <div className="flex items-center space-x-2">
+                {installPrompt && (
+                  <button
+                    onClick={handleInstallClick}
+                    className="hidden sm:flex items-center space-x-2 px-3 sm:px-4 py-2 bg-sky-600/80 border border-sky-500/80 rounded-md text-sm text-sky-100 hover:bg-sky-600 hover:border-sky-500 transition-colors"
+                    aria-label="Install App"
+                  >
+                    <InstallIcon className="w-5 h-5" />
+                    <span className="hidden sm:inline">Install App</span>
+                  </button>
+                )}
                 <button
                   onClick={() => setIsSettingsOpen(true)}
                   className="flex items-center p-2 sm:px-4 sm:space-x-2 bg-slate-800/70 border border-[var(--surface-border)] rounded-md text-sm text-slate-300 hover:bg-slate-700/80 hover:border-slate-600 transition-colors"
