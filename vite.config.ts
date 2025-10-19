@@ -5,11 +5,10 @@ import path from 'path';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
 
-  return {
-    server: {
+server: {
   port: 3000,
   host: '0.0.0.0',
-  allowedHosts: ['rotordoc.onrender.com'], // ✅ Add this line
+  allowedHosts: ['https://rotordoc-1.onrender.com', 'localhost'], // ✅ Add this line
 },
     plugins: [react()],
     define: {
