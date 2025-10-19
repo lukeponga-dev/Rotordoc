@@ -7,10 +7,10 @@ export default defineConfig(({ mode }) => {
 
   return {
     server: {
-      port: 3000,
-      host: '0.0.0.0',
-      allowedHosts: ['rotordoc-1.onrender.com'], // ✅ Fix: allow Render domain
-    },
+  port: 3000,
+  host: '0.0.0.0',
+  allowedHosts: ['rotordoc.onrender.com'], // ✅ Add this line
+},
     plugins: [react()],
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
