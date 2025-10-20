@@ -5,15 +5,13 @@ import path from 'path';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
 
-server: {
+  return {
+    server: {
   port: 3000,
   host: '0.0.0.0',
-  allowedHosts: [
-    'https://rotordoc-1.onrender.com',
-    'localhost',
-    'rotordoc.onrender.com' // ✅ Added this line to fix the error
-  ],
-},    plugins: [react()],
+  allowedHosts: ['rotordoc.onrender.com'], // ✅ Add this line
+},
+    plugins: [react()],
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
