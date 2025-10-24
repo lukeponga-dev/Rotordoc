@@ -1,5 +1,5 @@
 {
-  "name": "rotaryai",
+  "name": "rotorwise-ai",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -14,10 +14,7 @@
     "@google/genai": "^1.23.0",
     "react-markdown": "^10.1.0",
     "jspdf": "^3.0.3",
-    "remark-gfm": "^4.0.1",
-    "path": "^0.12.7",
-    "vite": "^7.1.10",
-    "@vitejs/plugin-react": "^5.0.4"
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

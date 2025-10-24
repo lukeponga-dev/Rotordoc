@@ -2,13 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 
 export const useTextToSpeech = () => {
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+  const synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
 
   const handleEnd = useCallback(() => {
     setSpeakingMessageId(null);
   }, []);
 
   const speak = useCallback((text: string, messageId: string) => {
-    const synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
     if (!synth || !text) return;
 
     // If another message is playing or pending, cancel it before starting a new one.
@@ -28,27 +28,23 @@ export const useTextToSpeech = () => {
     };
 
     synth.speak(utterance);
-  }, [handleEnd]);
+  }, [synth, handleEnd]);
 
   const cancel = useCallback(() => {
-    const synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
     if (synth && (synth.speaking || synth.pending)) {
-      // Calling cancel() on a fresh reference to the API ensures the correct 'this' context.
       synth.cancel();
       // The 'onend' event will fire automatically after cancel(), resetting the state.
     }
-  }, []);
+  }, [synth]);
   
   // Cleanup effect to stop any speech when the component using the hook unmounts.
   useEffect(() => {
     return () => {
-      const synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
       if (synth) {
-        // Ensure any ongoing speech is stopped to prevent memory leaks or errors.
         synth.cancel();
       }
     };
-  }, []);
+  }, [synth]);
 
   return { speak, cancel, speakingMessageId };
 };

@@ -1,15 +1,15 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useChatManager } from './components/SessionManager';
 import { ChatMessage } from './components/ChatMessage';
-import { SendIcon, ExportIcon, RotorWiseIcon, MenuIcon, PaperclipIcon, MicrophoneIcon, CloseIcon, BookOpenIcon, InstallIcon, SettingsIcon, MechanicalIcon, ChatIcon, GaugeIcon } from './components/Icons';
+import { SuggestionPills } from './components/SuggestionPills';
+import { SendIcon, ExportIcon, RotorWiseIcon, MenuIcon, PaperclipIcon, MicrophoneIcon, CloseIcon, BookOpenIcon, InstallIcon, SettingsIcon } from './components/Icons';
 import { Sidebar } from './components/Sidebar';
 import { exportToPDF } from './utils/export';
-import { Session, Message, DiagnosticState } from './types';
+import { Session } from './types';
 import { WorkshopGuide } from './components/WorkshopGuide';
 import { useTextToSpeech } from './hooks/useTextToSpeech';
 import { SettingsModal } from './components/SettingsModal';
-import { DiagnosticDashboard } from './components/DiagnosticDashboard';
-import { PrivacyPolicy } from './components/PrivacyPolicy';
 
 // Fix: Define SpeechRecognition interface to fix TypeScript error.
 interface SpeechRecognition {
@@ -32,35 +32,9 @@ declare global {
   }
 }
 
-const preconfiguredApiKey = process.env.API_KEY || '';
-
-const suggestionStarters = [
-    { title: "Hot Start Issues", description: "Engine struggles or won't start when fully warm.", query: "Engine won't start when hot" },
-    { title: "Unstable Idle", description: "Idle is rough, fluctuating, or stalls.", query: "Rough or unstable idle" },
-    { title: "Power Loss", description: "Car feels sluggish or loses power under acceleration.", query: "Loss of power during acceleration" },
-    { title: "CEL Flashing", description: "The check engine light is flashing, indicating a misfire.", query: "Flashing check engine light" },
-];
-
-const parseResponseForPanel = (content: string): DiagnosticState => {
-    const parseTag = (tag: string) => {
-        const regex = new RegExp(`<${tag}>(.*?)</${tag}>`, 's');
-        const match = content.match(regex);
-        if (!match) return [];
-        return match[1].split('\n').map(s => s.trim().replace(/^-/, '').trim()).filter(Boolean);
-    };
-
-    return {
-        potentialCauses: parseTag('causes'),
-        ruledOut: parseTag('ruled_out'),
-        keyFacts: parseTag('facts'),
-    };
-};
-
-
 const App: React.FC = () => {
-  const [apiKey, setApiKey] = useState<string>('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const { messages, loadingState, sendMessage, setHistory, startNewChat } = useChatManager(apiKey);
+  const { messages, loadingState, sendMessage, setHistory, startNewChat } = useChatManager();
   const [input, setInput] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const [video, setVideo] = useState<string | null>(null);
@@ -68,20 +42,16 @@ const App: React.FC = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState<'chat' | 'guide' | 'privacy'>('chat');
-  const [showDiagnosticPanel, setShowDiagnosticPanel] = useState(false);
+  const [currentView, setCurrentView] = useState<'chat' | 'guide'>('chat');
   const [installPrompt, setInstallPrompt] = useState<any | null>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
-  const [finalDiagnosis, setFinalDiagnosis] = useState<Message | null>(null);
-  const [diagnosticState, setDiagnosticState] = useState<DiagnosticState>({ potentialCauses: [], ruledOut: [], keyFacts: [] });
   
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const { speak, cancel, speakingMessageId } = useTextToSpeech();
+  const prevLoadingState = useRef(loadingState);
   
-  const isApiKeyPreconfigured = !!preconfiguredApiKey;
-
   useEffect(() => {
     try {
       const savedSessions = localStorage.getItem('rotorwise_sessions');
@@ -92,47 +62,11 @@ const App: React.FC = () => {
       console.error("Failed to load sessions from localStorage:", error);
       localStorage.removeItem('rotorwise_sessions');
     }
-
-    if (isApiKeyPreconfigured) {
-      setApiKey(preconfiguredApiKey);
-      return;
-    }
-    
-    // Load API Key or prompt user
-    const savedKey = localStorage.getItem('gemini_api_key');
-    if (savedKey) {
-        setApiKey(savedKey);
-    } else {
-        setIsSettingsOpen(true);
-    }
-
-  }, [isApiKeyPreconfigured]);
-  
-  const updateDiagnosticPanels = useCallback((msgs: Message[]) => {
-      const lastModelMsg = [...msgs].reverse().find(m => m.role === 'model');
-      if (!lastModelMsg || !lastModelMsg.content) {
-          setFinalDiagnosis(null);
-          setDiagnosticState({ potentialCauses: [], ruledOut: [], keyFacts: [] });
-          return;
-      }
-
-      if (lastModelMsg.content.includes('### ✅ Final Diagnosis:')) {
-          setFinalDiagnosis(lastModelMsg);
-          setDiagnosticState({ potentialCauses: [], ruledOut: [], keyFacts: [] });
-      } else {
-          setFinalDiagnosis(null);
-          setDiagnosticState(parseResponseForPanel(lastModelMsg.content));
-      }
   }, []);
 
   useEffect(() => {
-    updateDiagnosticPanels(messages);
-  }, [messages, updateDiagnosticPanels]);
-
-
-  useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, showDiagnosticPanel]);
+  }, [messages]);
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -183,41 +117,8 @@ const App: React.FC = () => {
         console.warn('Speech recognition not supported in this browser.');
     }
   }, []);
-
-  const handleSetApiKey = (key: string) => {
-    if (isApiKeyPreconfigured) return;
-    setApiKey(key);
-    localStorage.setItem('gemini_api_key', key);
-  };
   
-  const handleSend = () => {
-    if ((input.trim() || image || video) && loadingState === 'idle') {
-      sendMessage(input, image, video);
-      setInput('');
-      setImage(null);
-      setVideo(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
-  
-  const handleExport = () => {
-    exportToPDF(messages);
-  };
-
-  const handleNewChat = () => {
-    cancel(); // Stop any speech on new chat
-    startNewChat();
-    setActiveSessionId(null);
-    setIsSidebarOpen(false);
-    setShowDiagnosticPanel(false);
-    setCurrentView('chat');
-    setFinalDiagnosis(null);
-    setDiagnosticState({ potentialCauses: [], ruledOut: [], keyFacts: [] });
-  };
-
-  const saveSession = () => {
+  const saveSession = useCallback(() => {
     if (messages.length === 0) return;
 
     if (activeSessionId) {
@@ -238,6 +139,49 @@ const App: React.FC = () => {
       localStorage.setItem('rotorwise_sessions', JSON.stringify(updatedSessions));
       setActiveSessionId(newSession.id);
     }
+  }, [messages, activeSessionId, sessions]);
+
+  useEffect(() => {
+    const wasLoading = prevLoadingState.current === 'processing' || prevLoadingState.current === 'streaming';
+    
+    // Auto-save when a new chat's first response is successfully received
+    if (wasLoading && loadingState === 'idle' && !activeSessionId && messages.length >= 2) {
+        const lastMessage = messages[messages.length - 1];
+        if (lastMessage.role === 'model' && !lastMessage.isError && lastMessage.content) {
+            saveSession();
+        }
+    }
+
+    // Update ref *after* checking to store the state for the next render
+    prevLoadingState.current = loadingState;
+  }, [loadingState, messages, activeSessionId, saveSession]);
+
+  const handleSend = () => {
+    if ((input.trim() || image || video) && loadingState === 'idle') {
+      sendMessage(input, image, video);
+      setInput('');
+      setImage(null);
+      setVideo(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    sendMessage(suggestion, null, null);
+  };
+  
+  const handleExport = () => {
+    exportToPDF(messages);
+  };
+
+  const handleNewChat = () => {
+    cancel(); // Stop any speech on new chat
+    startNewChat();
+    setActiveSessionId(null);
+    setIsSidebarOpen(false);
+    setCurrentView('chat');
   };
 
   const loadSession = (sessionId: string) => {
@@ -246,10 +190,8 @@ const App: React.FC = () => {
     if (sessionToLoad) {
       setHistory(sessionToLoad.messages);
       setActiveSessionId(sessionId);
-      updateDiagnosticPanels(sessionToLoad.messages);
     }
     setIsSidebarOpen(false);
-    setShowDiagnosticPanel(false);
     setCurrentView('chat');
   };
   
@@ -306,19 +248,12 @@ const App: React.FC = () => {
     sessionStorage.setItem('rotorwise_install_dismissed', 'true');
   };
 
-  const handleViewChange = (view: 'chat' | 'guide' | 'privacy') => {
-    setShowDiagnosticPanel(false);
-    setCurrentView(view);
-  };
-  
-  const isChatDisabled = loadingState !== 'idle' || !apiKey;
+  const isChatDisabled = loadingState !== 'idle';
 
-  const placeholderText = !apiKey
-    ? "Please set your API key in the settings..."
-    : isListening
+  const placeholderText = isListening
     ? "Listening..."
     : isChatDisabled
-    ? (loadingState === 'thinking' ? 'RotorWise is thinking...' : 'Generating response...')
+    ? (loadingState === 'processing' ? 'RotorWise is thinking...' : 'Generating response...')
     : image
     ? "Describe the attached image or ask a question..."
     : video
@@ -327,195 +262,197 @@ const App: React.FC = () => {
 
   const activeSessionName = sessions.find(s => s.id === activeSessionId)?.name || 'New Diagnosis';
 
-  const renderCurrentView = () => {
-    switch(currentView) {
-      case 'guide':
-        return <WorkshopGuide onClose={() => handleViewChange('chat')} />;
-      case 'privacy':
-        return <PrivacyPolicy onClose={() => handleViewChange('chat')} />;
-      case 'chat':
-      default:
-        return (
-          <div className="flex flex-col flex-1 h-full min-w-0">
-            <header className="flex items-center justify-between p-3 sm:p-4 border-b border-[var(--surface-border)] shadow-md shrink-0 bg-[var(--surface-1)]/80 backdrop-blur-sm z-10">
-                <div className="flex items-center">
-                  <button onClick={() => { setIsSidebarOpen(true); setShowDiagnosticPanel(false); }} className="p-1 text-slate-400 hover:text-white md:hidden mr-2 sm:mr-3">
-                      <MenuIcon className="w-6 h-6" />
-                    </button>
-                  <div className="flex items-center space-x-2 sm:space-x-3">
-                      <RotorWiseIcon className="w-8 h-8 sm:w-10 sm:h-10 text-[var(--accent-primary)]" />
-                      <div>
-                          <h1 className="text-lg sm:text-xl font-bold font-display text-slate-200 tracking-wide">
-                            {showDiagnosticPanel ? 'Digital Dashboard' : 'RotorWise AI'}
-                          </h1>
-                          <p className="text-xs sm:text-sm text-slate-400 truncate max-w-[150px] sm:max-w-xs">
-                            {showDiagnosticPanel ? 'Live Diagnostic Data' : activeSessionName}
-                          </p>
-                      </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                   <button
-                    onClick={() => {
-                        if (isSidebarOpen) setIsSidebarOpen(false);
-                        setShowDiagnosticPanel(d => !d);
-                    }}
-                    className="lg:hidden p-2 bg-[var(--surface-2)] border border-[var(--surface-border)] rounded-md text-slate-300 hover:bg-slate-700/80 hover:border-slate-600 transition-colors"
-                    aria-label={showDiagnosticPanel ? "Show Chat" : "Show Diagnostic Dashboard"}
-                  >
-                    {showDiagnosticPanel ? <ChatIcon className="w-5 h-5" /> : <GaugeIcon className="w-5 h-5" />}
-                  </button>
-                  <button
-                    onClick={() => setIsSettingsOpen(true)}
-                    className="p-2 bg-[var(--surface-2)] border border-[var(--surface-border)] rounded-md text-slate-300 hover:bg-slate-700/80 hover:border-slate-600 transition-colors"
-                    aria-label="Open Settings"
-                  >
-                    <SettingsIcon className="w-5 h-5" />
-                  </button>
-                </div>
-              </header>
-              
-              <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-hidden">
-                {/* Main Chat Column */}
-                <div className={`${showDiagnosticPanel ? 'hidden' : 'flex'} lg:flex lg:col-span-8 flex-col h-full min-h-0`}>
-                  <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 sm:space-y-8 custom-scrollbar">
-                    {messages.length === 0 && loadingState === 'idle' ? (
-                      <div className="flex flex-col items-center justify-center h-full text-center p-2">
-                          <div className="flex flex-col items-center space-y-2 mb-8">
-                              <RotorWiseIcon className="w-16 h-16 sm:w-20 sm:h-20 text-[var(--accent-primary)] drop-shadow-[0_0_15px_var(--accent-primary-glow)]" />
-                              <h1 className="text-3xl sm:text-4xl font-bold font-display tracking-wider text-slate-100">RotorWise AI Diagnostics</h1>
-                              <p className="max-w-xl text-base text-slate-400">
-                                Your AI-powered expert for Mazda RX-8 troubleshooting.
-                              </p>
-                          </div>
-                         
-                          <div className="w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                            {suggestionStarters.map(({title, description, query}) => (
-                                <button
-                                    key={title}
-                                    onClick={() => sendMessage(query, null, null)}
-                                    className="text-left p-4 bg-[var(--surface-1)]/70 border border-[var(--surface-border)] rounded-lg hover:bg-[var(--surface-2)] hover:border-[var(--accent-secondary)] hover:scale-105 transition-all duration-200 group"
-                                >
-                                    <h3 className="font-semibold text-slate-200 group-hover:text-[var(--accent-secondary)] transition-colors">{title}</h3>
-                                    <p className="text-sm text-slate-400 mt-1">{description}</p>
-                                </button>
-                            ))}
-                          </div>
-                      </div>
-                    ) : (
-                      messages.map((msg) => (
-                        <ChatMessage
-                          key={msg.id}
-                          message={msg}
-                          onSpeak={speak}
-                          onCancelSpeak={cancel}
-                          speakingMessageId={speakingMessageId}
-                        />
-                      ))
-                    )}
-                    <div ref={chatEndRef} />
-                  </main>
-
-                  <footer className="p-3 sm:p-4 shrink-0 bg-transparent">
-                    <div className="max-w-4xl mx-auto">
-                      {showInstallBanner && installPrompt && (
-                        <div className="install-banner-animation mb-3 p-3 flex flex-col sm:flex-row items-center justify-between gap-3 bg-gradient-to-r from-sky-900/80 to-[var(--surface-2)]/80 border border-sky-700/60 rounded-lg shadow-lg">
-                          <div className="flex items-center gap-3 flex-1 min-w-0 w-full">
-                            <InstallIcon className="w-9 h-9 text-sky-300 shrink-0 p-1" />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-sky-100 leading-tight">Install RotorWise AI for quick access.</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
-                            <button onClick={handleDismissInstall} className="px-3 py-1.5 text-sky-300 hover:text-white hover:bg-sky-800/50 rounded-md text-sm transition-colors">Later</button>
-                            <button onClick={handleInstallClick} className="px-4 py-1.5 bg-sky-500 text-white rounded-md text-sm font-semibold hover:bg-sky-400 transition-colors flex items-center gap-2"><InstallIcon className="w-4 h-4" /><span>Install</span></button>
-                          </div>
-                        </div>
-                      )}
-                      {(video || image) && (
-                         <div className="flex items-center gap-3 mb-2 ml-2">
-                             {video && (
-                                 <div className="relative inline-block">
-                                     <video src={video} controls className="w-40 h-auto object-cover rounded-lg border-2 border-[var(--surface-border)]" />
-                                     <button onClick={() => { setVideo(null); if (fileInputRef.current) fileInputRef.current.value = ''; }} className="absolute -top-2 -right-2 bg-slate-800 text-white rounded-full p-1 border-2 border-[var(--surface-1)] hover:bg-red-500 transition-colors" aria-label="Remove video"><CloseIcon className="w-4 h-4" /></button>
-                                 </div>
-                             )}
-                             {image && (
-                                 <div className="relative inline-block">
-                                     <img src={image} alt="Upload preview" className="w-20 h-20 object-cover rounded-lg border-2 border-[var(--surface-border)]" />
-                                     <button onClick={() => { setImage(null); if (fileInputRef.current) fileInputRef.current.value = ''; }} className="absolute -top-2 -right-2 bg-slate-800 text-white rounded-full p-1 border-2 border-[var(--surface-1)] hover:bg-red-500 transition-colors" aria-label="Remove image"><CloseIcon className="w-4 h-4" /></button>
-                                 </div>
-                             )}
-                         </div>
-                      )}
-                      
-                      <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className={`relative flex items-center bg-[var(--surface-1)] rounded-xl border border-[var(--surface-border)] focus-within:ring-2 focus-within:ring-[var(--accent-primary)] transition-all shadow-lg ${isChatDisabled ? 'opacity-60' : ''}`}>
-                        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,video/*" className="hidden" />
-                        <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isChatDisabled} className="p-3 text-[var(--text-secondary)] hover:text-[var(--accent-secondary)] disabled:text-slate-600 disabled:cursor-not-allowed transition-colors rounded-full">
-                          <PaperclipIcon className="w-5 h-5" />
-                        </button>
-                        <textarea
-                          value={input}
-                          onChange={(e) => setInput(e.target.value)}
-                          onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                          placeholder={placeholderText}
-                          className="flex-1 w-full bg-transparent py-3 text-sm sm:text-base text-slate-200 placeholder-slate-500 focus:outline-none resize-none custom-scrollbar"
-                          disabled={isChatDisabled}
-                          rows={1}
-                        />
-                        <button type="button" onClick={toggleListening} disabled={isChatDisabled} className={`p-3 text-[var(--text-secondary)] hover:text-[var(--accent-secondary)] disabled:text-slate-600 disabled:cursor-not-allowed transition-colors rounded-full ${isListening ? 'pulse-ring-animation' : ''}`}>
-                          <MicrophoneIcon className={`w-5 h-5 ${isListening ? 'text-[var(--accent-primary)]' : ''}`} />
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={isChatDisabled || (!input.trim() && !image && !video)}
-                          className="m-1.5 p-3 bg-[var(--accent-primary)] text-white rounded-lg disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed hover:bg-orange-500 transition-colors shadow-md hover:shadow-lg hover:shadow-[var(--accent-primary-glow)]"
-                          aria-label="Send message"
-                        >
-                          {loadingState !== 'idle' && !!apiKey ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <SendIcon className="w-5 h-5" />}
-                        </button>
-                      </form>
-                    </div>
-                  </footer>
-                </div>
-                {/* Diagnostic Dashboard */}
-                <div className={`${showDiagnosticPanel ? 'block' : 'hidden'} lg:block lg:col-span-4 h-full min-h-0 p-4 border-l-0 lg:border-l border-[var(--surface-border)] bg-black/20`}>
-                    <DiagnosticDashboard diagnosticState={diagnosticState} finalDiagnosis={finalDiagnosis} />
-                </div>
-              </div>
-          </div>
-        );
-    }
-  };
-
   return (
     <div className="flex h-screen bg-transparent text-[var(--text-primary)] font-sans">
       <Sidebar
         sessions={sessions}
         activeSessionId={activeSessionId}
         isOpen={isSidebarOpen}
+        messages={messages}
         isLoading={isChatDisabled}
         onClose={() => setIsSidebarOpen(false)}
         onNewChat={handleNewChat}
         onLoadSession={loadSession}
         onDeleteSession={deleteSession}
         onSaveSession={saveSession}
-        onViewChange={handleViewChange}
-        showInstallButton={!!installPrompt}
+        onExport={handleExport}
         onInstall={handleInstallClick}
+        showInstallButton={!!installPrompt}
       />
-      {renderCurrentView()}
+      {currentView === 'guide' ? (
+        <WorkshopGuide onClose={() => setCurrentView('chat')} />
+      ) : (
+        <div className="flex flex-col flex-1 h-full">
+          <div className="flex flex-col max-w-4xl w-full mx-auto h-full bg-[var(--surface-1)]/80 backdrop-blur-md sm:rounded-lg border-x-0 sm:border-x border-y border-[var(--surface-border)] shadow-2xl shadow-black/40">
+            {/* Header */}
+            <header className="flex items-center justify-between p-3 sm:p-4 border-b border-[var(--surface-border)] shadow-md shrink-0">
+              <div className="flex items-center">
+                 <button onClick={() => setIsSidebarOpen(true)} className="p-1 text-slate-400 hover:text-white md:hidden mr-2 sm:mr-3">
+                    <MenuIcon className="w-6 h-6" />
+                  </button>
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                    <RotorWiseIcon className="w-8 h-8 sm:w-10 sm:h-10 text-[var(--accent-primary)]" />
+                    <div>
+                        <h1 className="text-lg sm:text-xl font-bold font-display text-slate-200 tracking-wide">RotorWise AI</h1>
+                        <p className="text-xs sm:text-sm text-slate-400 truncate max-w-[150px] sm:max-w-xs">{activeSessionName}</p>
+                    </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                {installPrompt && (
+                  <button
+                    onClick={handleInstallClick}
+                    className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-sky-600/80 border border-sky-500/80 rounded-md text-sm text-sky-100 hover:bg-sky-600 hover:border-sky-500 transition-colors"
+                    aria-label="Install App"
+                  >
+                    <InstallIcon className="w-5 h-5" />
+                    <span className="hidden sm:inline">Install App</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => setCurrentView('guide')}
+                  className="hidden sm:flex items-center space-x-2 px-3 sm:px-4 py-2 bg-slate-800/70 border border-[var(--surface-border)] rounded-md text-sm text-slate-300 hover:bg-slate-700/80 hover:border-slate-600 transition-colors"
+                >
+                  <BookOpenIcon className="w-5 h-5" />
+                  <span className="hidden sm:inline">Guide</span>
+                </button>
+                <button
+                  onClick={handleExport}
+                  disabled={messages.length === 0 || isChatDisabled}
+                  className="hidden sm:flex items-center space-x-2 px-3 sm:px-4 py-2 bg-slate-800/70 border border-[var(--surface-border)] rounded-md text-sm text-slate-300 hover:bg-slate-700/80 hover:border-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ExportIcon className="w-5 h-5" />
+                  <span className="hidden sm:inline">Export</span>
+                </button>
+                <button
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="p-2 bg-slate-800/70 border border-[var(--surface-border)] rounded-md text-slate-300 hover:bg-slate-700/80 hover:border-slate-600 transition-colors"
+                  aria-label="Open Settings"
+                >
+                  <SettingsIcon className="w-5 h-5" />
+                </button>
+              </div>
+            </header>
+
+            <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 sm:space-y-8 custom-scrollbar">
+              {messages.length === 0 && loadingState === 'idle' ? (
+                <SuggestionPills onSuggestionClick={handleSuggestionClick} />
+              ) : (
+                messages.map((msg) => (
+                  <ChatMessage
+                    key={msg.id}
+                    message={msg}
+                    onSpeak={speak}
+                    onCancelSpeak={cancel}
+                    speakingMessageId={speakingMessageId}
+                  />
+                ))
+              )}
+              <div ref={chatEndRef} />
+            </main>
+
+            <footer className="p-3 sm:p-4 border-t border-[var(--surface-border)] shrink-0">
+              <div className="max-w-3xl mx-auto">
+                {/* --- PWA Install Banner --- */}
+                {showInstallBanner && installPrompt && (
+                  <div className="install-banner-animation mb-3 p-3 flex items-center justify-between gap-3 bg-gradient-to-r from-sky-900/80 to-slate-800/80 border border-sky-700/60 rounded-lg shadow-lg">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <InstallIcon className="w-9 h-9 text-sky-300 shrink-0 p-1" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-sky-100 leading-tight">
+                          Download RotorWise AI now and get instant diagnostics, symptom tracking, and expert insights—all from your phone.
+                        </p>
+                        <blockquote className="mt-1.5 text-xs text-sky-300 border-l-2 border-sky-600 pl-2 italic">
+                          Tap below to install and start your smarter driving journey today!
+                        </blockquote>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                       <button 
+                         onClick={handleDismissInstall}
+                         className="px-3 py-1.5 text-sky-300 hover:text-white hover:bg-sky-800/50 rounded-md text-sm transition-colors"
+                         aria-label="Dismiss install banner"
+                       >
+                         Later
+                       </button>
+                       <button 
+                         onClick={handleInstallClick}
+                         className="px-4 py-1.5 bg-sky-500 text-white rounded-md text-sm font-semibold hover:bg-sky-400 transition-colors flex items-center gap-2"
+                       >
+                         <InstallIcon className="w-4 h-4" />
+                         <span>Install Now</span>
+                       </button>
+                    </div>
+                  </div>
+                )}
+                {video && (
+                  <div className="relative inline-block mb-2 ml-2">
+                    <video src={video} controls className="w-40 h-auto object-cover rounded-md border-2 border-[var(--surface-border)]" />
+                    <button
+                      onClick={() => {
+                        setVideo(null);
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                      }}
+                      className="absolute -top-2 -right-2 bg-slate-800 text-white rounded-full p-1 border-2 border-slate-600 hover:bg-red-500 transition-colors"
+                      aria-label="Remove video"
+                    >
+                      <CloseIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+                {image && (
+                  <div className="relative inline-block mb-2 ml-2">
+                    <img src={image} alt="Upload preview" className="w-20 h-20 object-cover rounded-md border-2 border-[var(--surface-border)]" />
+                    <button
+                      onClick={() => {
+                        setImage(null);
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                      }}
+                      className="absolute -top-2 -right-2 bg-slate-800 text-white rounded-full p-1 border-2 border-slate-600 hover:bg-red-500 transition-colors"
+                      aria-label="Remove image"
+                    >
+                      <CloseIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+                <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className={`flex items-center space-x-2 sm:space-x-3 bg-slate-800/80 rounded-xl border border-[var(--surface-border)] focus-within:ring-2 focus-within:ring-[var(--accent-primary)] transition-shadow p-1 ${isChatDisabled ? 'opacity-60' : ''}`}>
+                  <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,video/*" className="hidden" />
+                  <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isChatDisabled} className="p-2 text-[var(--text-secondary)] hover:text-[var(--accent-secondary)] disabled:text-slate-600 disabled:cursor-not-allowed transition-colors rounded-full">
+                    <PaperclipIcon className="w-6 h-6" />
+                  </button>
+                  <textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                    placeholder={placeholderText}
+                    className="flex-1 w-full bg-transparent p-2 text-sm sm:text-base text-slate-200 placeholder-slate-500 focus:outline-none resize-none custom-scrollbar"
+                    disabled={isChatDisabled}
+                    rows={1}
+                  />
+                  <div className="relative flex items-center">
+                    <button type="button" onClick={toggleListening} disabled={isChatDisabled} className="p-2 text-[var(--text-secondary)] hover:text-[var(--accent-secondary)] disabled:text-slate-600 disabled:cursor-not-allowed transition-colors rounded-full">
+                       <MicrophoneIcon className={`w-6 h-6 ${isListening ? 'text-[var(--accent-primary)]' : ''}`} />
+                    </button>
+                    {isListening && <div className="absolute inset-0 pulse-ring-animation" aria-hidden="true"></div>}
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isChatDisabled || (!input.trim() && !image && !video)}
+                    className="p-3 bg-[var(--accent-primary)] text-white rounded-lg disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed hover:bg-orange-500 transition-colors"
+                    aria-label="Send message"
+                  >
+                    {isChatDisabled ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <SendIcon className="w-6 h-6" />}
+                  </button>
+                </form>
+              </div>
+            </footer>
+          </div>
+        </div>
+      )}
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
-        apiKey={apiKey}
-        onSaveApiKey={handleSetApiKey}
-        onOpenPrivacyPolicy={() => {
-          setIsSettingsOpen(false);
-          handleViewChange('privacy');
-        }}
-        isPreconfigured={isApiKeyPreconfigured}
       />
     </div>
   );

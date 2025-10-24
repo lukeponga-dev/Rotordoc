@@ -12,9 +12,3 @@ export interface Session {
   name: string;
   messages: Message[];
 }
-
-export interface DiagnosticState {
-  potentialCauses: string[];
-  ruledOut: string[];
-  keyFacts: string[];
-}
