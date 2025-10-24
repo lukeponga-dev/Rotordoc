@@ -1,5 +1,4 @@
 
-
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { Message } from '../types';
@@ -110,38 +109,41 @@ const messageToContent = (messages: Message[]) => {
   }).filter(c => c.parts.length > 0);
 };
 
-// Helper function to parse the error and return a user-friendly message.
+// Helper function to parse the error and return a user-friendly message with specific guidance.
 const getDisplayErrorMessage = (error: unknown): string => {
-  // Prioritize checking for offline status
+  // 1. Check for offline status first, as it's a common client-side issue.
   if (!navigator.onLine) {
-    return "You appear to be offline. Please check your internet connection.";
+    return "It looks like you're offline. Please check your internet connection and try again.";
   }
 
-  // Check for specific API/network errors from the error message
-  if (error && typeof error === 'object' && 'message' in error) {
-    const errorMessage = ((error as Error).message || '').toLowerCase();
+  // 2. Inspect the error object for specific API-related messages.
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
 
-    if (errorMessage.includes('api key not valid')) {
-      return "The configured API key is invalid. Please contact the application administrator.";
+    // Invalid API Key
+    if (message.includes('api key not valid')) {
+      return "There's an issue with the application's configuration (Invalid API Key). Please notify the site administrator.";
     }
-    if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
-      return "The AI is currently busy due to high traffic. Please wait a moment before trying again.";
+    // Rate Limiting
+    if (message.includes('rate limit') || message.includes('429')) {
+      return "The service is currently experiencing high demand. Please wait a few moments before sending another message.";
     }
-    // A 400 error can also indicate a safety block.
-    if (errorMessage.includes('400')) {
-      return "The request was invalid. This can happen due to a safety policy violation or an unsupported prompt. Please try rephrasing your message.";
+    // Content Safety / Invalid Request
+    if (message.includes('400')) {
+      return "Your message could not be processed. It might have been blocked by a safety filter or contain unsupported content. Please try rephrasing your request.";
     }
-    if (errorMessage.includes('500') || errorMessage.includes('internal') || errorMessage.includes('503')) {
-      return "The AI service is experiencing a temporary issue. Please try again in a few moments.";
+    // Server-side Errors
+    if (message.includes('500') || message.includes('internal') || message.includes('503')) {
+      return "The AI service is temporarily unavailable due to an internal issue. Please try again shortly.";
     }
-    // Generic network-related errors
-    if (errorMessage.includes('fetch') || errorMessage.includes('network')) {
-      return "A network error occurred, preventing the request from completing. Please check your internet connection and try again.";
+    // Generic Network/Fetch Errors
+    if (message.includes('fetch') || message.includes('network')) {
+      return "A network problem is preventing connection to the AI service. Please verify your connection and try again.";
     }
   }
 
-  // Fallback for any other unexpected errors
-  return "An unexpected error occurred. Please check the developer console for more details and try again later.";
+  // 3. Fallback for any other unexpected errors.
+  return "An unexpected error occurred while communicating with the AI. Please try again. If the problem persists, check the developer console for more technical details.";
 };
 
 export const useChatManager = () => {

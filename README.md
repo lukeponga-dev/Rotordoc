@@ -25,20 +25,28 @@ RotorWise AI is a specialized diagnostic assistant built for Mazda RX-8 owners a
     - `react-markdown`: To render the AI's structured diagnostic reports.
     - `jspdf`: For the PDF export functionality.
 
-## 🏁 Getting Started
+## 📦 Project Configuration
 
-This project is configured to run without a build step. You just need a way to serve the static files and provide the necessary API key.
+This project now includes a `package.json` file to formally list its dependencies for better IDE integration (e.g., TypeScript type checking) and to prepare for a potential future migration to a bundled build system.
+
+**Current Architecture:**
+The application currently runs in a **"buildless"** mode. It uses an **Import Map** in `index.html` to load all dependencies directly from a CDN. This means you don't need to run `npm install` for the app to work in the browser.
+
+**Note on `npm start`:**
+The `package.json` includes a `start` script (`"start": "react-scripts start"`). Please be aware that this script **will not work** with the current file structure. It is included as a placeholder for a future migration to a standard Create React App setup. To run the project now, follow the "Getting Started" instructions below.
+
+## 🏁 Getting Started
 
 ### Prerequisites
 
-1.  A modern web browser (Chrome, Firefox, Edge, etc.).
-2.  A local web server. A simple one can be started with Python or a VS Code extension:
+1.  **Node.js and npm**: While the app runs without a build step, `npm` is useful for IDE integration. [Install Node.js here](https://nodejs.org/).
+2.  **Local Web Server**:
     - **Using Python**: `python -m http.server`
     - **VS Code Extension**: [Live Server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer)
 
 ### Configuration
 
-The application requires a Google Gemini API key to function. This key must be available to the application in the execution environment.
+The application requires a Google Gemini API key to function. This key must be available in the execution environment.
 
 - **API Key**: The application is hardcoded to look for the API key in `process.env.API_KEY`. Your serving environment must make this variable accessible to the client-side code.
 
@@ -49,13 +57,19 @@ The application requires a Google Gemini API key to function. This key must be a
     git clone <repository-url>
     cd <repository-directory>
     ```
-2.  **Set up the API Key:**
+2.  **(Optional) Install Dev Dependencies:** For better type checking and editor support, run:
+    ```bash
+    npm install
+    ```
+    *Note: This step is not required to run the application, as it loads dependencies from a CDN.*
+
+3.  **Set up the API Key:**
     Ensure your local server or deployment environment injects the `API_KEY`.
 
-3.  **Serve the project root:**
+4.  **Serve the project root:**
     Start your local web server from the root directory of the project (the one containing `index.html`).
 
-4.  **Open in browser:**
+5.  **Open in browser:**
     Navigate to the local address provided by your server (e.g., `http://localhost:8000`). The application should load and be ready to use.
 
 ## 📂 File Structure
@@ -66,6 +80,7 @@ The application requires a Google Gemini API key to function. This key must be a
 ├── index.html                # Entry point, import map, and Tailwind CSS setup.
 ├── index.tsx                 # Renders the React app into the DOM.
 ├── metadata.json             # Application metadata and permissions.
+├── package.json              # Project dependencies and scripts.
 ├── README.md                 # This file.
 ├── types.ts                  # TypeScript type definitions (Message, Session).
 ├── components/
