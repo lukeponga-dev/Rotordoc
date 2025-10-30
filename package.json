@@ -1,23 +1,28 @@
 {
   "name": "rotorwise-ai",
-  "version": "1.0.0",
   "private": true,
-  "description": "An AI-powered diagnostic tool for Mazda RX-8 owners. Get expert advice on your rotary engine's problems from RotorWise AI.",
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "start": "react-scripts start"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@google/genai": "^1.23.0",
-    "jspdf": "^3.0.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "@google/genai": "^1.23.0",
     "react-markdown": "^10.1.0",
-    "remark-gfm": "^4.0.1"
+    "jspdf": "^3.0.3",
+    "remark-gfm": "^4.0.1",
+    "path": "^0.12.7",
+    "vite": "^7.1.10",
+    "@vitejs/plugin-react": "^5.0.4"
   },
   "devDependencies": {
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "react-scripts": "5.0.1",
-    "typescript": "^5.4.5"
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
   }
 }
