@@ -1,64 +1,51 @@
+
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { Message } from '../types';
 import { TROUBLESHOOTING_DATA } from '../data/troubleshootingData';
 
-const initialMessage: Message = {
-  id: 'model-initial-message',
-  role: 'model',
-  content: "Hello! I'm RotorWise AI, your dedicated Mazda RX-8 specialist. To help me diagnose the issue, please describe the symptoms you're experiencing. You can also upload a photo or video. \n\nAlternatively, select one of the common issues below to get started.",
-};
-
 const systemInstruction = `
 **Persona and Expertise:**
 You are RotorWise, an expert AI Mechanic specializing *exclusively* in the Mazda RX-8 (Series 1 and Series 2) and its 13B-MSP Renesis rotary engine. You can analyze both text descriptions and uploaded images and videos of parts, error codes, or symptoms. Your goal is to accurately diagnose mechanical and electrical issues, provide step-by-step troubleshooting, and suggest appropriate repair procedures. Your tone must be professional, meticulous, and encouraging.
 
-**Core Directive: The Diagnostic Loop & Structured Output**
-Your primary function is to follow a strict, iterative diagnostic process. You MUST NOT provide a final diagnosis until you have gathered sufficient information. Each of your responses, until a final diagnosis is justified, MUST follow this dual structure: first, provide parsable data in custom tags, then present the human-readable text.
+**Core Directive: The Diagnostic Loop**
+Your primary function is to follow a strict, iterative diagnostic process. You MUST NOT provide a final diagnosis until you have gathered sufficient information. Each of your responses, until a final diagnosis is justified, MUST follow this clearer, more readable markdown structure:
 
-**1. Parsable Data Block (FOR THE APP'S LIVE STATUS PANEL):**
-You MUST start your response with a block containing the current state of the diagnosis, wrapped in tags. This data is for machine parsing and is critical for the UI.
-
-*   **\`<facts>\`:** Summarize the key facts you've gathered from the user so far. List each fact on a new line. (e.g., \`- Car is a Series 1 (2004) MT.\\n- Idle is rough only when the engine is fully warm.\\n- No check engine light.\`)
-*   **\`<causes>\`:** List the current top 3-4 *potential* causes you are investigating. List each on a new line. (e.g., \`- Failing Ignition Coils\\n- Vacuum Leak (post-MAF)\\n- Dirty MAF Sensor\\n- Low Fuel Pressure\`)
-*   **\`<ruled_out>\`:** If any causes have been eliminated based on user input, list them here. List each on a new line. If nothing is ruled out yet, use \`- None\`.
-
-**Example of a complete Parsable Data Block:**
-\`\`\`
-<facts>
-- User reports loss of power during acceleration.
-- Check engine light is NOT flashing.
-</facts>
-<causes>
-- Clogged Catalytic Converter
-- Weak Fuel Pump
-- Dirty MAF Sensor
-- Failing Ignition Coils
-</causes>
-<ruled_out>
-- None
-</ruled_out>
-\`\`\`
-
-**2. Human-Readable Response (FOR THE USER):**
-Immediately following the data block, provide your response to the user in clean markdown. This part follows a specific conversational flow:
-
-*   **Acknowledge and List Potential Causes:**
-    *   Present the most likely *potential* causes from your \`<causes>\` list in a numbered list.
-    *   For each cause, include a brief (1-2 sentence) explanation of *why* it is a common issue for the RX-8's Renesis engine.
+1.  **Acknowledge and List Potential Causes:**
+    *   Start by acknowledging the user's last input (e.g., "Understood. Based on that, here are the most likely causes:").
+    *   Present the 3 most likely *potential* causes in a numbered list. Each item must be bolded.
+    *   **Crucially, for each cause, you must include a brief (1-2 sentence) explanation of *why* it is a common issue for the RX-8's Renesis engine.** This explanation should be specific and technical where appropriate.
     *   Example:
-        1.  **Clogged Catalytic Converter:** The Renesis engine's design can lead to higher-than-normal oil consumption and occasional fuel-rich conditions, which can overheat and destroy the catalytic converter's internal structure, causing a major exhaust blockage.
-        2.  **Weak Fuel Pump:** The fuel pump can weaken over time, struggling to maintain the required pressure (around 58-62 PSI) needed for the high-revving Renesis, leading to fuel starvation under heavy load.
+        1.  **Failing Ignition Coils:** A very common issue. The original coils are mounted directly to the hot engine block, making them susceptible to premature failure from heat and vibration, which weakens their spark output over time.
+        2.  **Clogged Catalytic Converter:** The Renesis engine's design can lead to higher-than-normal oil consumption and occasional fuel-rich conditions, which can overheat and destroy the catalytic converter's internal structure, causing a major exhaust blockage.
+        3.  **Weak Fuel Pump:** The fuel pump can weaken over time, struggling to maintain the required pressure (around 58-62 PSI) needed for the high-revving Renesis, leading to fuel starvation under heavy load.
 
-*   **Ask a Crucial Question OR Guide a Test:**
-    *   Guide the user to the next logical step with a clear heading: \`#### Next Step: Clarifying Question\` or \`#### Next Step: Recommended Test\`.
+2.  **Ask a Crucial Question OR Guide a Test:**
+    *   Immediately after the list, you must guide the user to the next logical step to narrow down the possibilities.
+    *   Use a clear heading: \`#### Next Step: Clarifying Question\` or \`#### Next Step: Recommended Test\`.
     *   The question or test should be singular and focused.
     *   Example:
         #### Next Step: Clarifying Question
-        Do you notice any unusual smells from the exhaust, like rotten eggs?
+        When you accelerate hard, does the check engine light flash?
 
-**Final Diagnosis Structure:**
-Once you have sufficient information, provide ONLY the final diagnosis in the following structured markdown format. DO NOT include the parsable data block (\`<facts>\`, etc.) in the final diagnosis response.
+This iterative process continues with each user response, narrowing down the problem until you are confident enough to provide a final diagnosis using the structured format below.
+
+**Specific Diagnostic Procedures (from Manual):**
+When a user's issue points towards drivetrain problems (like vibrations, clunking noises, etc.) or they ask for technical specs, you MUST incorporate the following checks and data from the workshop manual.
+
+*   **Flow for Drivetrain Vibrations/Noises:**
+    1.  **Propeller Shaft Visuals:** Guide the user to safely inspect the propeller shaft. Ask: "Is there any visible damage, bending, or chipping on the shaft itself? The carbon fiber version is especially sensitive to impacts."
+    2.  **Universal Joint Check:** Instruct them to check the universal joints for play. Ask: "With the car safely secured, can you feel any play, looseness, or notchiness when trying to twist the universal joints by hand?"
+    3.  **Drive Shaft Boots:** Guide them to inspect the rear drive shafts. Ask: "Look at the rubber boots at each end of the rear axle shafts. Are they intact with no cracks or signs of grease leaking out?"
+    4.  **Mention Runout Spec:** If a vibration is speed-dependent, mention the factory tolerance. Say: "The factory specification for propeller shaft runout is a maximum of 0.4 mm. While measuring this requires a dial gauge, it highlights how sensitive the component is to imbalance."
+
+*   **Reference Technical Data:** When asked for specific fluid types or measurements, use this data:
+    *   **Rear Differential Oil:** Use API service GL-5 with SAE 90 viscosity. The capacity is approximately 1.2-1.4 Liters.
+    *   **Rear Wheel Bearing Play:** The maximum allowable play is 0.05 mm.
+    *   **Propeller Shaft Max Runout:** 0.4 mm.
+
+**Output Structure (Final Diagnosis):**
+Once you have sufficient information for a final diagnosis, present the result in the following structured markdown format. Do not deviate from this structure:
 
 \`\`\`markdown
 ### ✅ Final Diagnosis: [Identified Problem]
@@ -79,11 +66,11 @@ Once you have sufficient information, provide ONLY the final diagnosis in the fo
 *   ⚠️ **Safety Precaution:** [Crucial safety note, e.g., "Disconnect the battery before working on electrical components."]
 \`\`\`
 
-**Initial Interaction & Constraints:**
-*   For a simple greeting, provide a brief, friendly introduction. Do not start the diagnostic loop.
-*   For any message describing a car problem, immediately begin the Diagnostic Loop with the structured data block followed by the human-readable response.
-*   If a symptom suggests catastrophic failure (e.g., low compression), provide a strong warning to stop driving and see a human mechanic.
-*   Your knowledge is based on the official Mazda RX-8 workshop manual. An excerpt is provided below for reference.
+**Safety and Constraints:**
+* **Critical Warning:** If the symptom strongly suggests a catastrophic failure (e.g., low compression, potential engine seal failure), you must provide a strong, non-negotiable warning to stop driving the car and seek a qualified human mechanic for a physical compression test.
+* **Scope Limit:** Do not answer questions unrelated to the Mazda RX-8. Gently redirect the conversation back to the RX-8.
+
+**Your knowledge is based on the official Mazda RX-8 workshop manual. A relevant excerpt from the manual is provided below for your reference.**
 
 Workshop Manual Data:
 ${TROUBLESHOOTING_DATA}
@@ -122,90 +109,72 @@ const messageToContent = (messages: Message[]) => {
   }).filter(c => c.parts.length > 0);
 };
 
-// Helper function to parse the error and return a user-friendly message.
+// Helper function to parse the error and return a user-friendly message with specific guidance.
 const getDisplayErrorMessage = (error: unknown): string => {
-  // Prioritize checking for offline status, as it's a common client-side issue.
+  // 1. Check for offline status first, as it's a common client-side issue.
   if (!navigator.onLine) {
-    return "Connection Error: You appear to be offline. Please check your internet connection and try again.";
+    return "It looks like you're offline. Please check your internet connection and try again.";
   }
 
-  // Check for specific API/network errors from the error message
-  if (error && typeof error === 'object' && 'message' in error) {
-    const errorMessage = ((error as Error).message || '').toLowerCase();
+  // 2. Inspect the error object for specific API-related messages.
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
 
-    // Specific Gemini API errors
-    if (errorMessage.includes('api key not valid')) {
-      return "Authentication Error: The provided API key is invalid. Please go to Settings to verify your key.";
+    // Invalid API Key
+    if (message.includes('api key not valid')) {
+      return "There's an issue with the application's configuration (Invalid API Key). Please notify the site administrator.";
     }
-    if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
-      return "Request Limit Reached: The service is experiencing high traffic. Please wait a few moments before sending another message.";
+    // Rate Limiting
+    if (message.includes('rate limit') || message.includes('429')) {
+      return "The service is currently experiencing high demand. Please wait a few moments before sending another message.";
     }
-    if (errorMessage.includes('400')) {
-        // A 400 error can indicate a safety block or other malformed request.
-        return "Invalid Request: Your message may have been blocked due to safety policies or contained unsupported content. Please try rephrasing your prompt.";
+    // Content Safety / Invalid Request
+    if (message.includes('400')) {
+      return "Your message could not be processed. It might have been blocked by a safety filter or contain unsupported content. Please try rephrasing your request.";
     }
-    if (errorMessage.includes('500') || errorMessage.includes('internal') || errorMessage.includes('503')) {
-      return "Service Unavailable: The AI service is currently experiencing technical difficulties. Please try again later.";
+    // Server-side Errors
+    if (message.includes('500') || message.includes('internal') || message.includes('503')) {
+      return "The AI service is temporarily unavailable due to an internal issue. Please try again shortly.";
     }
-    
-    // Generic network-related errors that might not be caught by navigator.onLine
-    if (errorMessage.includes('fetch failed') || errorMessage.includes('networkerror')) {
-      return "Network Error: Could not connect to the AI service. Please check your internet connection and firewall settings.";
+    // Generic Network/Fetch Errors
+    if (message.includes('fetch') || message.includes('network')) {
+      return "A network problem is preventing connection to the AI service. Please verify your connection and try again.";
     }
   }
 
-  // Fallback for any other unexpected errors. This is important for debugging.
-  console.error("An unhandled error occurred:", error);
-  return "An unexpected error occurred. We've logged the issue. Please try again later or contact support if the problem persists.";
+  // 3. Fallback for any other unexpected errors.
+  return "An unexpected error occurred while communicating with the AI. Please try again. If the problem persists, check the developer console for more technical details.";
 };
 
-export const useChatManager = (apiKey: string) => {
+export const useChatManager = () => {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [loadingState, setLoadingState] = useState<'idle' | 'thinking' | 'streaming'>('idle');
-  
+  const [loadingState, setLoadingState] = useState<'idle' | 'processing' | 'streaming'>('idle');
+  const [initError, setInitError] = useState<string | null>(null);
+
   const ai = useMemo(() => {
-    if (!apiKey) {
-      return null;
-    }
     try {
-      // Re-initialize the AI client whenever the API key changes.
-      return new GoogleGenAI({ apiKey });
+      // The API_KEY is expected to be set in the environment.
+      if (!process.env.API_KEY) {
+        throw new Error("API_KEY environment variable is not set.");
+      }
+      return new GoogleGenAI({ apiKey: process.env.API_KEY });
     } catch (error) {
       console.error("Failed to initialize GoogleGenAI:", error);
-      // We can't set state here, but we can return null and handle it elsewhere.
+      setInitError("Could not initialize the AI service. The API key may be missing or invalid in the application's configuration.");
       return null;
     }
-  }, [apiKey]);
-  
-  // Effect to show an error message or the initial welcome message.
+  }, []);
+
   useEffect(() => {
-    if (!apiKey) {
-        setMessages(prev => {
-            if (prev.some(m => m.id === 'error-no-key')) return prev;
-            return [{
-                id: 'error-no-key',
-                role: 'model',
-                content: '### Configuration Error\n\nPlease enter your Google Gemini API key in the settings to begin.',
-                isError: true,
-            }];
-        });
-    } else if (!ai) {
-        setMessages([{
-            id: `error-init-${Date.now()}`,
-            role: 'model',
-            content: `### Initialization Error\n\nCould not initialize the AI service. The API key might be malformed.`,
-            isError: true,
-        }]);
-    } else {
-        setMessages(prev => {
-            const nonErrorMessages = prev.filter(m => !m.isError);
-            if (nonErrorMessages.length === 0) {
-                return [initialMessage];
-            }
-            return prev.filter(m => !m.isError);
-        });
+    if (initError) {
+      setMessages([{
+        id: `error-init-${Date.now()}`,
+        role: 'model',
+        content: `### Configuration Error\n\n${initError}`,
+        isError: true,
+      }]);
     }
-  }, [apiKey, ai]);
+  }, [initError]);
 
 
   const setHistory = useCallback((history: Message[]) => {
@@ -217,15 +186,13 @@ export const useChatManager = (apiKey: string) => {
   }, []);
 
   const startNewChat = useCallback(() => {
-    if (ai) {
-        setMessages([initialMessage]);
-    }
-  }, [ai]);
+    setMessages([]);
+  }, []);
 
   const sendMessage = useCallback(async (text: string, imageUrl?: string | null, videoUrl?: string | null) => {
     if (loadingState !== 'idle' || !ai || (!text.trim() && !imageUrl && !videoUrl)) return;
 
-    setLoadingState('thinking');
+    setLoadingState('processing');
     const userMessage: Message = { 
       id: `user-${Date.now()}`, 
       role: 'user', 
@@ -244,7 +211,7 @@ export const useChatManager = (apiKey: string) => {
 
     try {
       const responseStream = await ai.models.generateContentStream({
-        model: 'gemini-flash-latest',
+        model: 'gemini-2.5-flash',
         contents,
         config: { systemInstruction },
       });

@@ -1,6 +1,6 @@
 {
   "name": "RotorWise AI",
-  "description": "RotorWise AI is your rotary-savvy mechanic in your pocket. Diagnose RX-8 issues instantly — from hot start failures to misfires — with expert-level insights and session tracking.",
+  "description": "An AI-powered diagnostic tool for Mazda RX-8 owners. Get expert advice on your rotary engine's problems from RotorWise AI.",
   "requestFramePermissions": [
     "microphone",
     "camera"
