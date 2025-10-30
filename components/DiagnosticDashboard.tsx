@@ -1,12 +1,14 @@
+
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Message, DiagnosticState } from '../types';
-import { RotorWiseIcon, MechanicalIcon, SettingsIcon, WarningLightIcon, CheckCircleIcon, InfoIcon, GaugeIcon } from './Icons';
+import { TrashIcon, CheckCircleIcon, InfoIcon, GaugeIcon, WarningLightIcon } from './Icons';
 
 interface DiagnosticDashboardProps {
   diagnosticState: DiagnosticState;
   finalDiagnosis: Message | null;
+  onClear: () => void;
 }
 
 const Placeholder: React.FC = () => (
@@ -50,7 +52,7 @@ const FinalDiagnosisReport: React.FC<{ diagnosis: Message }> = ({ diagnosis }) =
 };
 
 
-export const DiagnosticDashboard: React.FC<DiagnosticDashboardProps> = ({ diagnosticState, finalDiagnosis }) => {
+export const DiagnosticDashboard: React.FC<DiagnosticDashboardProps> = ({ diagnosticState, finalDiagnosis, onClear }) => {
   if (finalDiagnosis) {
     return <FinalDiagnosisReport diagnosis={finalDiagnosis} />;
   }
@@ -64,8 +66,17 @@ export const DiagnosticDashboard: React.FC<DiagnosticDashboardProps> = ({ diagno
 
   return (
     <div className="h-full flex flex-col bg-gradient-to-b from-[var(--surface-1)] to-[var(--background-dark)] rounded-lg border border-[var(--surface-border)] shadow-xl shadow-black/40">
-       <div className="p-4 border-b border-gray-700/80 shrink-0">
-            <h3 className="text-lg font-bold font-display text-gray-200 text-center tracking-wider">Digital Dashboard</h3>
+       <div className="p-4 border-b border-gray-700/80 shrink-0 flex items-center justify-between">
+            <div className="w-8"></div> {/* Spacer to help center the title */}
+            <h3 className="text-lg font-bold font-display text-gray-200 tracking-wider">Digital Dashboard</h3>
+            <button
+                onClick={onClear}
+                className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors rounded-full"
+                title="Clear Dashboard Data"
+                aria-label="Clear Dashboard Data"
+            >
+                <TrashIcon className="w-5 h-5" />
+            </button>
        </div>
        <div className="p-4 flex-1 space-y-4 overflow-y-auto custom-scrollbar">
             {keyFacts.length > 0 && (

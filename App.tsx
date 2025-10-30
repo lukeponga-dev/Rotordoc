@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useChatManager } from './components/SessionManager';
 import { ChatMessage } from './components/ChatMessage';
@@ -230,6 +231,11 @@ const App: React.FC = () => {
     setFinalDiagnosis(null);
   };
 
+  const handleClearDashboard = () => {
+    setDiagnosticState({ potentialCauses: [], ruledOut: [], keyFacts: [] });
+    setFinalDiagnosis(null);
+  };
+
   const loadSession = (sessionId: string) => {
     const session = sessions.find(s => s.id === sessionId);
     if (session) {
@@ -384,7 +390,7 @@ const App: React.FC = () => {
             {/* Diagnostic Dashboard */}
             <aside className="overflow-hidden">
                 <div className="w-[420px] h-full p-4 pl-0">
-                    <DiagnosticDashboard diagnosticState={diagnosticState} finalDiagnosis={finalDiagnosis} />
+                    <DiagnosticDashboard diagnosticState={diagnosticState} finalDiagnosis={finalDiagnosis} onClear={handleClearDashboard} />
                 </div>
             </aside>
           </div>
