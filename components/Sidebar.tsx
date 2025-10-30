@@ -47,9 +47,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex items-center justify-between p-4 border-b border-[var(--surface-border)] shrink-0">
           <div className="flex items-center gap-2">
             <RotorWiseIcon className="w-7 h-7 text-[var(--accent-primary)]" />
-            <h2 className="text-lg font-bold font-display text-slate-200">RotorWise AI</h2>
+            <h2 className="text-lg font-bold font-display text-gray-200">RotorWise AI</h2>
           </div>
-          <button onClick={onClose} className="p-1 text-slate-400 hover:text-white md:hidden ml-2">
+          <button onClick={onClose} className="p-1 text-gray-400 hover:text-white md:hidden ml-2">
             <CloseIcon className="w-6 h-6" />
           </button>
         </div>
@@ -58,7 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
              <button 
                 onClick={onNewChat} 
                 title="New Chat"
-                className="w-full flex items-center justify-center space-x-2 px-3 py-2.5 bg-[var(--accent-primary)] text-white rounded-md text-sm font-semibold hover:bg-orange-500 transition-colors shadow-lg shadow-[var(--accent-primary-glow)]"
+                className="w-full flex items-center justify-center space-x-2 px-3 py-2.5 bg-[var(--accent-primary)] text-white rounded-md text-sm font-semibold hover:bg-orange-600 transition-colors shadow-lg shadow-[var(--accent-primary-glow)]"
               >
                 <PlusIcon className="w-5 h-5" />
                 <span>New Diagnosis</span>
@@ -67,7 +67,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
 
         <div className="flex-1 flex flex-col overflow-y-auto custom-scrollbar">
-            <h3 className="px-4 pt-2 pb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Saved Sessions</h3>
+            <h3 className="px-4 pt-2 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Saved Sessions</h3>
             <nav className="flex-1 px-2">
               <ul className="space-y-1">
                 {sessions.map((session) => (
@@ -77,7 +77,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       className={`w-full text-left flex items-center justify-between p-2.5 rounded-md text-sm transition-all duration-200 group ${
                         activeSessionId === session.id
                           ? 'bg-[var(--surface-2)] text-white shadow-inner border-l-2 border-[var(--accent-primary)] pl-2'
-                          : 'text-slate-400 hover:bg-[var(--surface-2)]/60 hover:text-slate-200'
+                          : 'text-gray-400 hover:bg-[var(--surface-2)]/60 hover:text-gray-200'
                       }`}
                     >
                       <span className="truncate flex-1 pr-2">{session.name}</span>
@@ -89,7 +89,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                               onDeleteSession(session.id);
                             }
                           }}
-                          className="p-1 text-slate-500 hover:text-red-400 rounded-full"
+                          className="p-1 text-gray-500 hover:text-red-400 rounded-full"
                           aria-label={`Delete session ${session.name}`}
                         >
                           <TrashIcon className="w-4 h-4" />
@@ -99,7 +99,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </li>
                 ))}
                  {sessions.length === 0 && (
-                    <div className="text-center text-slate-500 text-sm p-4">
+                    <div className="text-center text-gray-500 text-sm p-4">
                         No saved sessions.
                     </div>
                  )}
@@ -119,7 +119,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
             <button
               onClick={() => onViewChange('guide')}
-              className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-[var(--surface-2)]/70 border border-[var(--surface-border)] rounded-md text-sm text-slate-300 hover:bg-[var(--surface-2)] hover:border-slate-600 transition-colors"
+              className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-[var(--surface-2)]/70 border border-[var(--surface-border)] rounded-md text-sm text-gray-300 hover:bg-[var(--surface-2)] hover:border-gray-600 transition-colors"
             >
               <BookOpenIcon className="w-5 h-5" />
               <span>Workshop Guide</span>

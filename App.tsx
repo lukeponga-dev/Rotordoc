@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useChatManager } from './components/SessionManager';
 import { ChatMessage } from './components/ChatMessage';
-import { SendIcon, ExportIcon, RotorWiseIcon, MenuIcon, PaperclipIcon, MicrophoneIcon, CloseIcon, BookOpenIcon, InstallIcon, SettingsIcon, MechanicalIcon, ChatIcon, GaugeIcon } from './components/Icons';
+import { SendIcon, ExportIcon, RotorWiseIcon, MenuIcon, PaperclipIcon, MicrophoneIcon, CloseIcon, BookOpenIcon, InstallIcon, SettingsIcon, DashboardIcon } from './components/Icons';
 import { Sidebar } from './components/Sidebar';
 import { exportToPDF } from './utils/export';
 import { Session, Message, DiagnosticState } from './types';
@@ -69,7 +69,7 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<'chat' | 'guide' | 'privacy'>('chat');
-  const [showDiagnosticPanel, setShowDiagnosticPanel] = useState(true);
+  const [isDashboardOpen, setIsDashboardOpen] = useState(window.innerWidth >= 1024);
   const [installPrompt, setInstallPrompt] = useState<any | null>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [finalDiagnosis, setFinalDiagnosis] = useState<Message | null>(null);
@@ -113,11 +113,19 @@ const App: React.FC = () => {
       }
     };
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    
+    const handleResize = () => {
+      if (window.innerWidth < 1024 && isDashboardOpen) {
+          setIsDashboardOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('resize', handleResize);
     };
-  }, []);
+  }, [isDashboardOpen]);
 
   // Scroll to the latest message
   useEffect(() => {
@@ -130,7 +138,7 @@ const App: React.FC = () => {
     if (lastMessage && lastMessage.role === 'model' && lastMessage.content) {
       if (lastMessage.content.includes('### ✅ Final Diagnosis:')) {
         setFinalDiagnosis(lastMessage);
-        setShowDiagnosticPanel(true);
+        setIsDashboardOpen(true);
       } else {
         setFinalDiagnosis(null);
         const newState = parseResponseForPanel(lastMessage.content);
@@ -153,9 +161,9 @@ const App: React.FC = () => {
   };
 
   const handleSuggestionClick = (query: string) => {
-    setInput(query);
-    // Focus the input field after setting the value
-    // This is a good UX improvement, but requires an input ref
+    if (loadingState !== 'idle') return;
+    sendMessage(query, null, null);
+    setInput('');
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -291,50 +299,38 @@ const App: React.FC = () => {
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
         <header className="flex items-center justify-between p-3 border-b border-[var(--surface-border)] bg-[var(--surface-1)]/80 backdrop-blur-sm z-10 shrink-0">
             <div className="flex items-center gap-2">
-                <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-slate-400 hover:text-white md:hidden">
+                <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-[var(--text-secondary)] hover:text-white md:hidden">
                     <MenuIcon className="w-6 h-6" />
                 </button>
                 <div className="flex items-center gap-2">
                     <RotorWiseIcon className="w-6 h-6 text-[var(--accent-primary)] hidden sm:block" />
-                    <h1 className="text-lg font-bold font-display text-slate-200">RotorWise AI</h1>
+                    <h1 className="text-lg font-bold font-display text-[var(--text-primary)]">RotorWise AI</h1>
                 </div>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2">
                 <button
                     onClick={() => exportToPDF(messages)}
                     disabled={messages.length === 0}
-                    className="flex items-center space-x-2 px-3 py-1.5 bg-slate-700/60 border border-slate-600 rounded-md text-sm text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center space-x-2 px-3 py-1.5 bg-gray-700/60 border border-gray-600 rounded-md text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     title="Export chat to PDF"
                 >
                     <ExportIcon className="w-4 h-4" />
                     <span className="hidden sm:inline">Export</span>
                 </button>
-                <button onClick={() => setIsSettingsOpen(true)} className="p-2 text-slate-400 hover:text-white" title="Settings">
+                <button onClick={() => setIsDashboardOpen(!isDashboardOpen)} className={`p-2 rounded-md transition-colors ${isDashboardOpen ? 'bg-[var(--accent-secondary)]/20 text-[var(--accent-secondary)]' : 'text-gray-400 hover:text-white hover:bg-gray-700/60'}`} title="Toggle Dashboard">
+                    <DashboardIcon className="w-5 h-5" />
+                </button>
+                <button onClick={() => setIsSettingsOpen(true)} className="p-2 text-gray-400 hover:text-white" title="Settings">
                     <SettingsIcon className="w-5 h-5" />
                 </button>
             </div>
         </header>
 
         {currentView === 'chat' && (
-          <div className="flex-1 flex flex-row overflow-hidden">
+          <div className={`flex-1 grid overflow-hidden transition-all duration-500 ease-in-out`} style={{ gridTemplateColumns: isDashboardOpen ? '1fr 420px' : '1fr 0' }}>
             {/* Main Chat Area */}
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-hidden min-w-0">
               <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6">
-                {messages.length === 0 && (
-                  <div className="text-center pt-16">
-                    <RotorWiseIcon className="mx-auto w-20 h-20 text-slate-700" />
-                    <h2 className="mt-4 text-2xl font-bold font-display text-slate-400">How can I help?</h2>
-                    <p className="mt-2 text-slate-500">Describe the issue with your RX-8 or select a starter.</p>
-                    <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto">
-                        {suggestionStarters.map((starter) => (
-                            <button key={starter.title} onClick={() => handleSuggestionClick(starter.query)} className="text-left p-3 bg-[var(--surface-1)] hover:bg-[var(--surface-2)] border border-[var(--surface-border)] rounded-lg transition-all duration-200 group">
-                                <p className="font-semibold text-slate-200 group-hover:text-[var(--accent-primary)]">{starter.title}</p>
-                                <p className="text-xs text-slate-500">{starter.description}</p>
-                            </button>
-                        ))}
-                    </div>
-                  </div>
-                )}
                 {messages.map((msg) => (
                   <ChatMessage key={msg.id} message={msg} onSpeak={speak} onCancelSpeak={cancel} speakingMessageId={speakingMessageId} />
                 ))}
@@ -342,9 +338,9 @@ const App: React.FC = () => {
               </div>
 
               {/* Input Area */}
-              <div className="p-4 border-t border-[var(--surface-border)] bg-gradient-to-t from-black/20 to-transparent shrink-0">
+              <div className="p-4 border-t border-[var(--surface-border)] bg-gradient-to-t from-gray-900/50 to-transparent shrink-0">
                   <div className="max-w-4xl mx-auto bg-[var(--surface-1)] rounded-xl border border-[var(--surface-border)] shadow-lg flex items-center p-2 focus-within:ring-2 focus-within:ring-[var(--accent-primary)] transition-shadow">
-                      <button onClick={() => fileInputRef.current?.click()} className="p-2 text-slate-400 hover:text-[var(--accent-secondary)]" title="Attach image or video">
+                      <button onClick={() => fileInputRef.current?.click()} className="p-2 text-gray-400 hover:text-[var(--accent-secondary)] transition-colors" title="Attach image or video">
                           <PaperclipIcon className="w-5 h-5" />
                       </button>
                       <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*,video/*" />
@@ -354,28 +350,42 @@ const App: React.FC = () => {
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                         placeholder="Describe the symptoms..."
-                        className="flex-1 bg-transparent text-sm text-slate-200 placeholder-slate-500 resize-none border-none focus:ring-0 py-2.5"
+                        className="flex-1 bg-transparent text-sm text-gray-200 placeholder-gray-500 resize-none border-none focus:ring-0 py-2.5"
                         rows={1}
                       />
 
-                      <button onClick={toggleListening} className={`p-2 transition-colors ${isListening ? 'text-[var(--accent-primary)] pulse-ring-animation rounded-full' : 'text-slate-400 hover:text-[var(--accent-secondary)]'}`} title={isListening ? 'Listening...' : 'Use microphone'}>
+                      <button onClick={toggleListening} className={`p-2 transition-colors ${isListening ? 'text-[var(--accent-primary)] pulse-ring-animation rounded-full' : 'text-gray-400 hover:text-[var(--accent-secondary)]'}`} title={isListening ? 'Listening...' : 'Use microphone'}>
                           <MicrophoneIcon className="w-5 h-5" />
                       </button>
-                      <button onClick={handleSend} disabled={loadingState !== 'idle' || (!input.trim() && !image && !video)} className="ml-2 px-4 py-2 bg-[var(--accent-primary)] text-white rounded-lg text-sm font-semibold hover:bg-orange-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                          <SendIcon className="w-5 h-5" />
+                      <button onClick={handleSend} disabled={loadingState !== 'idle' || (!input.trim() && !image && !video)} className="ml-2 px-4 py-2 bg-[var(--accent-primary)] text-white rounded-lg text-sm font-semibold hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center w-[44px]">
+                          {loadingState === 'thinking' ? <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin"></div> : <SendIcon className="w-5 h-5" />}
                       </button>
                   </div>
                   {(image || video) && (
-                      <div className="text-center text-xs mt-2 text-slate-400">
+                      <div className="text-center text-xs mt-2 text-gray-400">
                           {image ? 'Image ready to send. ' : 'Video ready to send. '}
                           <button onClick={() => { setImage(null); setVideo(null); if(fileInputRef.current) fileInputRef.current.value = ''; }} className="underline hover:text-red-400">Remove</button>
                       </div>
                   )}
+                  {messages.length === 1 && (
+                    <div className="mt-4 max-w-4xl mx-auto">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 text-sm">
+                            {suggestionStarters.map((starter) => (
+                                <button key={starter.title} onClick={() => handleSuggestionClick(starter.query)} className="text-left p-2.5 bg-gray-800/60 hover:bg-[var(--surface-2)] border border-[var(--surface-border)] rounded-lg transition-all duration-200 group">
+                                    <p className="font-semibold text-gray-300 group-hover:text-[var(--accent-primary)] text-xs">{starter.title}</p>
+                                    <p className="text-xs text-gray-500 hidden sm:block mt-1">{starter.description}</p>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                  )}
               </div>
             </div>
             {/* Diagnostic Dashboard */}
-            <aside className={`w-1/3 min-w-[380px] p-4 border-l border-[var(--surface-border)] bg-black/20 overflow-y-auto custom-scrollbar ${showDiagnosticPanel ? 'block' : 'hidden'} lg:block`}>
-                <DiagnosticDashboard diagnosticState={diagnosticState} finalDiagnosis={finalDiagnosis} />
+            <aside className="overflow-hidden">
+                <div className="w-[420px] h-full p-4 pl-0">
+                    <DiagnosticDashboard diagnosticState={diagnosticState} finalDiagnosis={finalDiagnosis} />
+                </div>
             </aside>
           </div>
         )}

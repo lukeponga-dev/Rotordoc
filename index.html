@@ -6,7 +6,7 @@
   <title>RotorWise AI - RX-8 Mechanic</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#FF6B00" />
+  <meta name="theme-color" content="#F97316" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -14,25 +14,22 @@
     :root {
       --font-sans: 'Inter', sans-serif;
       --font-display: 'Exo 2', sans-serif;
-      --background-dark: #05080E;
-      --surface-1: #0B101B;
-      --surface-2: #1A202C;
-      --surface-border: rgba(45, 55, 72, 0.7);
-      --accent-primary: #FF6B00;
-      --accent-primary-glow: rgba(255, 107, 0, 0.4);
-      --accent-secondary: #00E0FF;
-      --accent-secondary-glow: rgba(0, 224, 255, 0.3);
-      --text-primary: #E2E8F0;
-      --text-secondary: #94A3B8;
-      --text-dark: #1E293B;
+      --background-dark: #111827; /* bg-gray-900 */
+      --surface-1: #1F2937; /* bg-gray-800 */
+      --surface-2: #374151; /* bg-gray-700 */
+      --surface-border: #4B5563; /* border-gray-600 */
+      --accent-primary: #F97316; /* text-orange-500 */
+      --accent-primary-glow: rgba(249, 115, 22, 0.4);
+      --accent-secondary: #06B6D4; /* text-cyan-500 */
+      --accent-secondary-glow: rgba(6, 182, 212, 0.3);
+      --text-primary: #F3F4F6; /* text-gray-100 */
+      --text-secondary: #9CA3AF; /* text-gray-400 */
+      --text-dark: #111827; /* text-gray-900 */
     }
 
     body {
       background-color: var(--background-dark);
-      background-image:
-        radial-gradient(circle at 15% 50%, rgba(0, 224, 255, 0.08) 0%, transparent 25%),
-        radial-gradient(circle at 85% 30%, rgba(255, 107, 0, 0.07) 0%, transparent 25%);
-      background-size: 100% 100%;
+      background-image: linear-gradient(180deg, rgba(31, 41, 55, 0.01), rgba(17, 24, 39, 1));
       background-attachment: fixed;
       font-family: var(--font-sans);
       color: var(--text-primary);
@@ -43,15 +40,15 @@
       width: 10px;
     }
     .custom-scrollbar::-webkit-scrollbar-track {
-      background: rgba(11, 16, 27, 0.5);
+      background: rgba(17, 24, 39, 0.5);
     }
     .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #334155;
+      background: #4B5563;
       border-radius: 5px;
-      border: 2px solid rgba(11, 16, 27, 0.5);
+      border: 2px solid rgba(17, 24, 39, 0.5);
     }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: #475569;
+      background: #6B7280;
     }
 
     /* Entry animation */
@@ -65,7 +62,7 @@
         transform: translateY(0) scale(1);
       }
     }
-    .chat-message-container, .live-status-card {
+    .chat-message-container {
       animation: slide-up-fade 0.3s ease-out forwards;
     }
 
@@ -85,7 +82,7 @@
         box-shadow: 0 0 0 0 var(--accent-primary-glow);
       }
       70% {
-        box-shadow: 0 0 0 10px rgba(255, 107, 0, 0);
+        box-shadow: 0 0 0 10px rgba(249, 115, 22, 0);
       }
       100% {
         transform: scale(0.9);
@@ -108,6 +105,14 @@
     }
     .install-banner-animation {
       animation: slide-in-bottom 0.4s ease-out forwards;
+    }
+    
+    @keyframes slide-in-right {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    .slide-in-right-animation {
+        animation: slide-in-right 0.3s ease-out forwards;
     }
 
     /* Custom styles for rendered markdown */
@@ -154,10 +159,10 @@
     }
     
     .prose tbody tr:nth-child(even) {
-      background-color: rgba(30, 41, 59, 0.3);
+      background-color: rgba(31, 41, 55, 0.3);
     }
     .prose tbody tr:hover {
-      background-color: rgba(51, 65, 85, 0.5);
+      background-color: rgba(55, 65, 81, 0.5);
     }
 
     .prose ul {

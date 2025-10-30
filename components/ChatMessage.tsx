@@ -15,9 +15,9 @@ interface ChatMessageProps {
 // A typing indicator to show while the model is generating a response.
 const ModelResponseLoader: React.FC = () => (
   <div className="flex items-center space-x-1.5 p-3">
-    <div className="w-2 h-2 bg-slate-500 rounded-full animate-typing-dot" style={{ animationDelay: '0s' }}></div>
-    <div className="w-2 h-2 bg-slate-500 rounded-full animate-typing-dot" style={{ animationDelay: '0.2s' }}></div>
-    <div className="w-2 h-2 bg-slate-500 rounded-full animate-typing-dot" style={{ animationDelay: '0.4s' }}></div>
+    <div className="w-2 h-2 bg-gray-500 rounded-full animate-typing-dot" style={{ animationDelay: '0s' }}></div>
+    <div className="w-2 h-2 bg-gray-500 rounded-full animate-typing-dot" style={{ animationDelay: '0.2s' }}></div>
+    <div className="w-2 h-2 bg-gray-500 rounded-full animate-typing-dot" style={{ animationDelay: '0.4s' }}></div>
   </div>
 );
 
@@ -43,14 +43,14 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSpeak, onCa
       <div className={`${containerClass} flex justify-end`}>
         <div className="flex items-start gap-3 sm:gap-4 max-w-[90%] sm:max-w-[80%]">
           <div className="order-2 flex flex-col items-end">
-            <div className="user-bubble text-sm sm:text-base p-3 rounded-2xl rounded-br-lg bg-gradient-to-br from-[var(--accent-primary)] to-orange-700 shadow-lg">
+            <div className="user-bubble text-sm sm:text-base p-3 rounded-2xl rounded-br-lg bg-gradient-to-br from-[var(--accent-primary)] to-orange-600 shadow-lg">
               {message.imageUrl && <img src={message.imageUrl} alt="User upload" className="mb-2 rounded-lg max-h-60" />}
               {message.videoUrl && <video src={message.videoUrl} controls className="mb-2 rounded-lg max-h-60" />}
               <p className="whitespace-pre-wrap">{message.content}</p>
             </div>
           </div>
-          <div className="order-1 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-700 flex items-center justify-center shrink-0 shadow-sm mt-1">
-            <UserIcon className="w-5 h-5 sm:w-6 sm:h-6 text-slate-300" />
+          <div className="order-1 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-700 flex items-center justify-center shrink-0 shadow-sm mt-1">
+            <UserIcon className="w-5 h-5 sm:w-6 sm:h-6 text-gray-300" />
           </div>
         </div>
       </div>
@@ -74,7 +74,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSpeak, onCa
           </div>
           {message.content && !message.isError && (
              <div className="flex items-center space-x-2 mt-2 pl-1">
-              <button onClick={handleSpeakClick} className="p-1.5 bg-[var(--surface-2)]/80 backdrop-blur-sm rounded-full text-slate-400 hover:text-[var(--accent-secondary)] hover:bg-slate-700/80 transition-colors" title={isSpeaking ? 'Stop speaking' : 'Read aloud'}>
+              <button onClick={handleSpeakClick} className="p-1.5 bg-[var(--surface-2)]/80 backdrop-blur-sm rounded-full text-gray-400 hover:text-[var(--accent-secondary)] hover:bg-gray-600/80 transition-colors" title={isSpeaking ? 'Stop speaking' : 'Read aloud'}>
                 {isSpeaking ? <StopIcon className="w-4 h-4" /> : <PlayIcon className="w-4 h-4" />}
               </button>
               <Feedback />

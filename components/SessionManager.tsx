@@ -3,6 +3,12 @@ import { GoogleGenAI } from '@google/genai';
 import { Message } from '../types';
 import { TROUBLESHOOTING_DATA } from '../data/troubleshootingData';
 
+const initialMessage: Message = {
+  id: 'model-initial-message',
+  role: 'model',
+  content: "Hello! I'm RotorWise AI, your dedicated Mazda RX-8 specialist. To help me diagnose the issue, please describe the symptoms you're experiencing. You can also upload a photo or video. \n\nAlternatively, select one of the common issues below to get started.",
+};
+
 const systemInstruction = `
 **Persona and Expertise:**
 You are RotorWise, an expert AI Mechanic specializing *exclusively* in the Mazda RX-8 (Series 1 and Series 2) and its 13B-MSP Renesis rotary engine. You can analyze both text descriptions and uploaded images and videos of parts, error codes, or symptoms. Your goal is to accurately diagnose mechanical and electrical issues, provide step-by-step troubleshooting, and suggest appropriate repair procedures. Your tone must be professional, meticulous, and encouraging.
@@ -17,7 +23,6 @@ You MUST start your response with a block containing the current state of the di
 *   **\`<causes>\`:** List the current top 3-4 *potential* causes you are investigating. List each on a new line. (e.g., \`- Failing Ignition Coils\\n- Vacuum Leak (post-MAF)\\n- Dirty MAF Sensor\\n- Low Fuel Pressure\`)
 *   **\`<ruled_out>\`:** If any causes have been eliminated based on user input, list them here. List each on a new line. If nothing is ruled out yet, use \`- None\`.
 
-{/* Fix: Wrap the example block in a markdown code fence to prevent TSX parsing errors. */}
 **Example of a complete Parsable Data Block:**
 \`\`\`
 <facts>
@@ -172,11 +177,10 @@ export const useChatManager = (apiKey: string) => {
     }
   }, [apiKey]);
   
-  // Effect to show an error message if the AI client fails to initialize.
+  // Effect to show an error message or the initial welcome message.
   useEffect(() => {
     if (!apiKey) {
         setMessages(prev => {
-            // Avoid adding multiple messages if one already exists.
             if (prev.some(m => m.id === 'error-no-key')) return prev;
             return [{
                 id: 'error-no-key',
@@ -193,8 +197,13 @@ export const useChatManager = (apiKey: string) => {
             isError: true,
         }]);
     } else {
-        // If key is provided and AI is initialized, clear any previous error messages.
-        setMessages(prev => prev.filter(m => !m.isError));
+        setMessages(prev => {
+            const nonErrorMessages = prev.filter(m => !m.isError);
+            if (nonErrorMessages.length === 0) {
+                return [initialMessage];
+            }
+            return prev.filter(m => !m.isError);
+        });
     }
   }, [apiKey, ai]);
 
@@ -209,7 +218,7 @@ export const useChatManager = (apiKey: string) => {
 
   const startNewChat = useCallback(() => {
     if (ai) {
-        setMessages([]);
+        setMessages([initialMessage]);
     }
   }, [ai]);
 
