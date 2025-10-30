@@ -1,15 +1,15 @@
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useChatManager } from './components/SessionManager';
 import { ChatMessage } from './components/ChatMessage';
-import { SuggestionPills } from './components/SuggestionPills';
-import { SendIcon, ExportIcon, RotorWiseIcon, MenuIcon, PaperclipIcon, MicrophoneIcon, CloseIcon, BookOpenIcon, InstallIcon, SettingsIcon } from './components/Icons';
+import { SendIcon, ExportIcon, RotorWiseIcon, MenuIcon, PaperclipIcon, MicrophoneIcon, CloseIcon, BookOpenIcon, InstallIcon, SettingsIcon, MechanicalIcon, ChatIcon, GaugeIcon } from './components/Icons';
 import { Sidebar } from './components/Sidebar';
 import { exportToPDF } from './utils/export';
-import { Session } from './types';
+import { Session, Message, DiagnosticState } from './types';
 import { WorkshopGuide } from './components/WorkshopGuide';
 import { useTextToSpeech } from './hooks/useTextToSpeech';
 import { SettingsModal } from './components/SettingsModal';
+import { DiagnosticDashboard } from './components/DiagnosticDashboard';
+import { PrivacyPolicy } from './components/PrivacyPolicy';
 
 // Fix: Define SpeechRecognition interface to fix TypeScript error.
 interface SpeechRecognition {
@@ -32,9 +32,35 @@ declare global {
   }
 }
 
+const preconfiguredApiKey = process.env.API_KEY || '';
+
+const suggestionStarters = [
+    { title: "Hot Start Issues", description: "Engine struggles or won't start when fully warm.", query: "Engine won't start when hot" },
+    { title: "Unstable Idle", description: "Idle is rough, fluctuating, or stalls.", query: "Rough or unstable idle" },
+    { title: "Power Loss", description: "Car feels sluggish or loses power under acceleration.", query: "Loss of power during acceleration" },
+    { title: "CEL Flashing", description: "The check engine light is flashing, indicating a misfire.", query: "Flashing check engine light" },
+];
+
+const parseResponseForPanel = (content: string): DiagnosticState => {
+    const parseTag = (tag: string) => {
+        const regex = new RegExp(`<${tag}>(.*?)</${tag}>`, 's');
+        const match = content.match(regex);
+        if (!match) return [];
+        return match[1].split('\n').map(s => s.trim().replace(/^-/, '').trim()).filter(Boolean);
+    };
+
+    return {
+        potentialCauses: parseTag('causes'),
+        ruledOut: parseTag('ruled_out'),
+        keyFacts: parseTag('facts'),
+    };
+};
+
+
 const App: React.FC = () => {
+  const [apiKey, setApiKey] = useState<string>('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const { messages, loadingState, sendMessage, setHistory, startNewChat } = useChatManager();
+  const { messages, loadingState, sendMessage, setHistory, startNewChat } = useChatManager(apiKey);
   const [input, setInput] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const [video, setVideo] = useState<string | null>(null);
@@ -42,159 +68,170 @@ const App: React.FC = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState<'chat' | 'guide'>('chat');
+  const [currentView, setCurrentView] = useState<'chat' | 'guide' | 'privacy'>('chat');
+  const [showDiagnosticPanel, setShowDiagnosticPanel] = useState(true);
   const [installPrompt, setInstallPrompt] = useState<any | null>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [finalDiagnosis, setFinalDiagnosis] = useState<Message | null>(null);
+  const [diagnosticState, setDiagnosticState] = useState<DiagnosticState>({ potentialCauses: [], ruledOut: [], keyFacts: [] });
   
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const { speak, cancel, speakingMessageId } = useTextToSpeech();
-  const prevLoadingState = useRef(loadingState);
   
+  const isApiKeyPreconfigured = !!preconfiguredApiKey;
+
+  // Load API key from storage or preconfigured env
+  useEffect(() => {
+    const savedApiKey = localStorage.getItem('gemini_api_key');
+    if (isApiKeyPreconfigured) {
+      setApiKey(preconfiguredApiKey);
+    } else if (savedApiKey) {
+      setApiKey(savedApiKey);
+    } else {
+      setIsSettingsOpen(true);
+    }
+  }, [isApiKeyPreconfigured]);
+
+  // Load sessions from local storage and set up PWA install prompt
   useEffect(() => {
     try {
-      const savedSessions = localStorage.getItem('rotorwise_sessions');
-      if (savedSessions) {
-        setSessions(JSON.parse(savedSessions));
+      const savedSessionsData = localStorage.getItem('rotorwise_sessions');
+      if (savedSessionsData) {
+        setSessions(JSON.parse(savedSessionsData));
       }
     } catch (error) {
-      console.error("Failed to load sessions from localStorage:", error);
-      localStorage.removeItem('rotorwise_sessions');
-    }
-  }, []);
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  useEffect(() => {
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js')
-            .then(reg => console.log('Service Worker registered.', reg))
-            .catch(err => console.error('Service Worker registration failed.', err));
-        });
+      console.error("Failed to load sessions from localStorage", error);
     }
 
     const handleBeforeInstallPrompt = (e: Event) => {
-        e.preventDefault();
-        setInstallPrompt(e);
-        const dismissedInSession = sessionStorage.getItem('rotorwise_install_dismissed');
-        if (!dismissedInSession) {
-            setShowInstallBanner(true);
-        }
+      e.preventDefault();
+      setInstallPrompt(e);
+      if (!window.matchMedia('(display-mode: standalone)').matches) {
+        setShowInstallBanner(true);
+      }
     };
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
     return () => {
-        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
   }, []);
 
+  // Scroll to the latest message
   useEffect(() => {
-    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognitionAPI) {
-        const recognition = new SpeechRecognitionAPI();
-        recognition.continuous = false;
-        recognition.interimResults = false;
-        recognition.lang = 'en-US';
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-        recognition.onresult = (event: any) => {
-            const text = event.results[event.results.length - 1][0].transcript;
-            setInput(prev => prev ? `${prev} ${text}`.trim() : text);
-        };
-        
-        recognition.onstart = () => setIsListening(true);
-        recognition.onend = () => setIsListening(false);
-        recognition.onerror = (event: any) => {
-            console.error('Speech recognition error:', event.error);
-            setIsListening(false);
-        };
-
-        recognitionRef.current = recognition;
-    } else {
-        console.warn('Speech recognition not supported in this browser.');
-    }
-  }, []);
-  
-  const saveSession = useCallback(() => {
-    if (messages.length === 0) return;
-
-    if (activeSessionId) {
-       const updatedSessions = sessions.map(s => 
-        s.id === activeSessionId ? { ...s, messages: messages } : s
-      );
-      setSessions(updatedSessions);
-      localStorage.setItem('rotorwise_sessions', JSON.stringify(updatedSessions));
-    } else {
-      const sessionName = messages.find(m => m.role === 'user')?.content.substring(0, 30) || 'New Session';
-      const newSession: Session = {
-        id: new Date().toISOString(),
-        name: `${sessionName}...`,
-        messages: messages,
-      };
-      const updatedSessions = [...sessions, newSession];
-      setSessions(updatedSessions);
-      localStorage.setItem('rotorwise_sessions', JSON.stringify(updatedSessions));
-      setActiveSessionId(newSession.id);
-    }
-  }, [messages, activeSessionId, sessions]);
-
+  // Parse model response for diagnostic panel data
   useEffect(() => {
-    const wasLoading = prevLoadingState.current === 'processing' || prevLoadingState.current === 'streaming';
-    
-    // Auto-save when a new chat's first response is successfully received
-    if (wasLoading && loadingState === 'idle' && !activeSessionId && messages.length >= 2) {
-        const lastMessage = messages[messages.length - 1];
-        if (lastMessage.role === 'model' && !lastMessage.isError && lastMessage.content) {
-            saveSession();
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage && lastMessage.role === 'model' && lastMessage.content) {
+      if (lastMessage.content.includes('### ✅ Final Diagnosis:')) {
+        setFinalDiagnosis(lastMessage);
+        setShowDiagnosticPanel(true);
+      } else {
+        setFinalDiagnosis(null);
+        const newState = parseResponseForPanel(lastMessage.content);
+        if (newState.potentialCauses.length > 0 || newState.keyFacts.length > 0) {
+          setDiagnosticState(newState);
         }
-    }
-
-    // Update ref *after* checking to store the state for the next render
-    prevLoadingState.current = loadingState;
-  }, [loadingState, messages, activeSessionId, saveSession]);
-
-  const handleSend = () => {
-    if ((input.trim() || image || video) && loadingState === 'idle') {
-      sendMessage(input, image, video);
-      setInput('');
-      setImage(null);
-      setVideo(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
       }
     }
+  }, [messages]);
+
+  const handleSend = () => {
+    if ((!input.trim() && !image && !video) || loadingState !== 'idle') return;
+    sendMessage(input, image, video);
+    setInput('');
+    setImage(null);
+    setVideo(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
-  const handleSuggestionClick = (suggestion: string) => {
-    sendMessage(suggestion, null, null);
+  const handleSuggestionClick = (query: string) => {
+    setInput(query);
+    // Focus the input field after setting the value
+    // This is a good UX improvement, but requires an input ref
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      if (file.type.startsWith('image/')) {
+        setImage(result);
+        setVideo(null);
+      } else if (file.type.startsWith('video/')) {
+        setVideo(result);
+        setImage(null);
+      }
+    };
+    reader.readAsDataURL(file);
   };
   
-  const handleExport = () => {
-    exportToPDF(messages);
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognitionAPI) {
+      recognitionRef.current = new SpeechRecognitionAPI();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = 'en-US';
+      recognitionRef.current.onstart = () => setIsListening(true);
+      recognitionRef.current.onend = () => setIsListening(false);
+      recognitionRef.current.onerror = (e) => {
+          console.error('Speech recognition error:', e.error);
+          setIsListening(false);
+      };
+      recognitionRef.current.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
+        setInput(transcript);
+        // Automatically send after successful transcription
+        sendMessage(transcript, image, video);
+        setInput('');
+      };
+      recognitionRef.current.start();
+    } else {
+      alert("Speech recognition is not supported by your browser.");
+    }
+  };
+
+  // Session Management
+  const handleSaveApiKey = (key: string) => {
+    setApiKey(key);
+    localStorage.setItem('gemini_api_key', key);
   };
 
   const handleNewChat = () => {
-    cancel(); // Stop any speech on new chat
     startNewChat();
     setActiveSessionId(null);
     setIsSidebarOpen(false);
     setCurrentView('chat');
+    setDiagnosticState({ potentialCauses: [], ruledOut: [], keyFacts: [] });
+    setFinalDiagnosis(null);
   };
 
   const loadSession = (sessionId: string) => {
-    cancel(); // Stop any speech on load
-    const sessionToLoad = sessions.find(s => s.id === sessionId);
-    if (sessionToLoad) {
-      setHistory(sessionToLoad.messages);
+    const session = sessions.find(s => s.id === sessionId);
+    if (session) {
+      setHistory(session.messages);
       setActiveSessionId(sessionId);
+      setIsSidebarOpen(false);
+      setCurrentView('chat');
     }
-    setIsSidebarOpen(false);
-    setCurrentView('chat');
   };
-  
+
   const deleteSession = (sessionId: string) => {
     const updatedSessions = sessions.filter(s => s.id !== sessionId);
     setSessions(updatedSessions);
@@ -204,258 +241,176 @@ const App: React.FC = () => {
     }
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (file.type.startsWith('image/')) {
-          setImage(reader.result as string);
-          setVideo(null);
-        } else if (file.type.startsWith('video/')) {
-          setVideo(reader.result as string);
-          setImage(null);
+  const saveSession = () => {
+    if (messages.length === 0) return;
+    const sessionName = prompt('Enter a name for this diagnosis:', `Diagnosis Session ${new Date().toLocaleDateString()}`);
+    if (sessionName) {
+        const newSession: Session = {
+            id: `session-${Date.now()}`,
+            name: sessionName,
+            messages: messages
+        };
+        const updatedSessions = [...sessions, newSession];
+        setSessions(updatedSessions);
+        setActiveSessionId(newSession.id);
+        localStorage.setItem('rotorwise_sessions', JSON.stringify(updatedSessions));
+    }
+  };
+
+  const handleInstall = () => {
+    if (installPrompt) {
+      installPrompt.prompt();
+      installPrompt.userChoice.then((choiceResult: { outcome: string }) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+        } else {
+          console.log('User dismissed the install prompt');
         }
-      };
-      reader.readAsDataURL(file);
+        setShowInstallBanner(false);
+        setInstallPrompt(null);
+      });
     }
   };
-
-  const toggleListening = () => {
-    if (!recognitionRef.current) return;
-    if (isListening) {
-      recognitionRef.current.stop();
-    } else {
-      recognitionRef.current.start();
-    }
-  };
-
-  const handleInstallClick = async () => {
-    if (!installPrompt) return;
-    setShowInstallBanner(false);
-    installPrompt.prompt();
-    const { outcome } = await installPrompt.userChoice;
-    if (outcome === 'accepted') {
-        console.log('User accepted the install prompt');
-    } else {
-        console.log('User dismissed the install prompt');
-    }
-    setInstallPrompt(null);
-  };
-
-  const handleDismissInstall = () => {
-    setShowInstallBanner(false);
-    sessionStorage.setItem('rotorwise_install_dismissed', 'true');
-  };
-
-  const isChatDisabled = loadingState !== 'idle';
-
-  const placeholderText = isListening
-    ? "Listening..."
-    : isChatDisabled
-    ? (loadingState === 'processing' ? 'RotorWise is thinking...' : 'Generating response...')
-    : image
-    ? "Describe the attached image or ask a question..."
-    : video
-    ? "Describe the attached video or ask a question..."
-    : "Describe your RX-8 issue, e.g., 'rough idle when warm'...";
-
-  const activeSessionName = sessions.find(s => s.id === activeSessionId)?.name || 'New Diagnosis';
 
   return (
-    <div className="flex h-screen bg-transparent text-[var(--text-primary)] font-sans">
+    <div className="flex h-full bg-[var(--background-dark)] text-[var(--text-primary)]">
       <Sidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
         sessions={sessions}
         activeSessionId={activeSessionId}
-        isOpen={isSidebarOpen}
-        messages={messages}
-        isLoading={isChatDisabled}
-        onClose={() => setIsSidebarOpen(false)}
         onNewChat={handleNewChat}
         onLoadSession={loadSession}
         onDeleteSession={deleteSession}
         onSaveSession={saveSession}
-        onExport={handleExport}
-        onInstall={handleInstallClick}
+        onViewChange={(view) => {setCurrentView(view); setIsSidebarOpen(false);}}
+        onInstall={handleInstall}
         showInstallButton={!!installPrompt}
+        isLoading={loadingState !== 'idle'}
       />
-      {currentView === 'guide' ? (
-        <WorkshopGuide onClose={() => setCurrentView('chat')} />
-      ) : (
-        <div className="flex flex-col flex-1 h-full">
-          <div className="flex flex-col max-w-4xl w-full mx-auto h-full bg-[var(--surface-1)]/80 backdrop-blur-md sm:rounded-lg border-x-0 sm:border-x border-y border-[var(--surface-border)] shadow-2xl shadow-black/40">
-            {/* Header */}
-            <header className="flex items-center justify-between p-3 sm:p-4 border-b border-[var(--surface-border)] shadow-md shrink-0">
-              <div className="flex items-center">
-                 <button onClick={() => setIsSidebarOpen(true)} className="p-1 text-slate-400 hover:text-white md:hidden mr-2 sm:mr-3">
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+        <header className="flex items-center justify-between p-3 border-b border-[var(--surface-border)] bg-[var(--surface-1)]/80 backdrop-blur-sm z-10 shrink-0">
+            <div className="flex items-center gap-2">
+                <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-slate-400 hover:text-white md:hidden">
                     <MenuIcon className="w-6 h-6" />
-                  </button>
-                <div className="flex items-center space-x-2 sm:space-x-3">
-                    <RotorWiseIcon className="w-8 h-8 sm:w-10 sm:h-10 text-[var(--accent-primary)]" />
+                </button>
+                <div className="flex items-center gap-2">
+                    <RotorWiseIcon className="w-6 h-6 text-[var(--accent-primary)] hidden sm:block" />
+                    <h1 className="text-lg font-bold font-display text-slate-200">RotorWise AI</h1>
+                </div>
+            </div>
+            <div className="flex items-center space-x-2">
+                <button
+                    onClick={() => exportToPDF(messages)}
+                    disabled={messages.length === 0}
+                    className="flex items-center space-x-2 px-3 py-1.5 bg-slate-700/60 border border-slate-600 rounded-md text-sm text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Export chat to PDF"
+                >
+                    <ExportIcon className="w-4 h-4" />
+                    <span className="hidden sm:inline">Export</span>
+                </button>
+                <button onClick={() => setIsSettingsOpen(true)} className="p-2 text-slate-400 hover:text-white" title="Settings">
+                    <SettingsIcon className="w-5 h-5" />
+                </button>
+            </div>
+        </header>
+
+        {currentView === 'chat' && (
+          <div className="flex-1 flex flex-row overflow-hidden">
+            {/* Main Chat Area */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6">
+                {messages.length === 0 && (
+                  <div className="text-center pt-16">
+                    <RotorWiseIcon className="mx-auto w-20 h-20 text-slate-700" />
+                    <h2 className="mt-4 text-2xl font-bold font-display text-slate-400">How can I help?</h2>
+                    <p className="mt-2 text-slate-500">Describe the issue with your RX-8 or select a starter.</p>
+                    <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto">
+                        {suggestionStarters.map((starter) => (
+                            <button key={starter.title} onClick={() => handleSuggestionClick(starter.query)} className="text-left p-3 bg-[var(--surface-1)] hover:bg-[var(--surface-2)] border border-[var(--surface-border)] rounded-lg transition-all duration-200 group">
+                                <p className="font-semibold text-slate-200 group-hover:text-[var(--accent-primary)]">{starter.title}</p>
+                                <p className="text-xs text-slate-500">{starter.description}</p>
+                            </button>
+                        ))}
+                    </div>
+                  </div>
+                )}
+                {messages.map((msg) => (
+                  <ChatMessage key={msg.id} message={msg} onSpeak={speak} onCancelSpeak={cancel} speakingMessageId={speakingMessageId} />
+                ))}
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Input Area */}
+              <div className="p-4 border-t border-[var(--surface-border)] bg-gradient-to-t from-black/20 to-transparent shrink-0">
+                  <div className="max-w-4xl mx-auto bg-[var(--surface-1)] rounded-xl border border-[var(--surface-border)] shadow-lg flex items-center p-2 focus-within:ring-2 focus-within:ring-[var(--accent-primary)] transition-shadow">
+                      <button onClick={() => fileInputRef.current?.click()} className="p-2 text-slate-400 hover:text-[var(--accent-secondary)]" title="Attach image or video">
+                          <PaperclipIcon className="w-5 h-5" />
+                      </button>
+                      <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*,video/*" />
+                      
+                      <textarea
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                        placeholder="Describe the symptoms..."
+                        className="flex-1 bg-transparent text-sm text-slate-200 placeholder-slate-500 resize-none border-none focus:ring-0 py-2.5"
+                        rows={1}
+                      />
+
+                      <button onClick={toggleListening} className={`p-2 transition-colors ${isListening ? 'text-[var(--accent-primary)] pulse-ring-animation rounded-full' : 'text-slate-400 hover:text-[var(--accent-secondary)]'}`} title={isListening ? 'Listening...' : 'Use microphone'}>
+                          <MicrophoneIcon className="w-5 h-5" />
+                      </button>
+                      <button onClick={handleSend} disabled={loadingState !== 'idle' || (!input.trim() && !image && !video)} className="ml-2 px-4 py-2 bg-[var(--accent-primary)] text-white rounded-lg text-sm font-semibold hover:bg-orange-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                          <SendIcon className="w-5 h-5" />
+                      </button>
+                  </div>
+                  {(image || video) && (
+                      <div className="text-center text-xs mt-2 text-slate-400">
+                          {image ? 'Image ready to send. ' : 'Video ready to send. '}
+                          <button onClick={() => { setImage(null); setVideo(null); if(fileInputRef.current) fileInputRef.current.value = ''; }} className="underline hover:text-red-400">Remove</button>
+                      </div>
+                  )}
+              </div>
+            </div>
+            {/* Diagnostic Dashboard */}
+            <aside className={`w-1/3 min-w-[380px] p-4 border-l border-[var(--surface-border)] bg-black/20 overflow-y-auto custom-scrollbar ${showDiagnosticPanel ? 'block' : 'hidden'} lg:block`}>
+                <DiagnosticDashboard diagnosticState={diagnosticState} finalDiagnosis={finalDiagnosis} />
+            </aside>
+          </div>
+        )}
+
+        {currentView === 'guide' && <WorkshopGuide onClose={() => setCurrentView('chat')} />}
+        {currentView === 'privacy' && <PrivacyPolicy onClose={() => setCurrentView('chat')} />}
+
+        {/* PWA Install Banner */}
+        {showInstallBanner && (
+            <div className="install-banner-animation absolute bottom-4 left-1/2 -translate-x-1/2 w-11/12 max-w-md bg-gradient-to-r from-[var(--accent-secondary)]/90 to-sky-600/90 backdrop-blur-md p-4 rounded-lg shadow-2xl flex items-center justify-between z-20 border border-sky-400/50">
+                <div className="flex items-center">
+                    <InstallIcon className="w-8 h-8 text-white mr-3"/>
                     <div>
-                        <h1 className="text-lg sm:text-xl font-bold font-display text-slate-200 tracking-wide">RotorWise AI</h1>
-                        <p className="text-xs sm:text-sm text-slate-400 truncate max-w-[150px] sm:max-w-xs">{activeSessionName}</p>
+                        <p className="font-bold text-white">Install RotorWise AI</p>
+                        <p className="text-xs text-sky-100">Add to your home screen for quick access.</p>
                     </div>
                 </div>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                {installPrompt && (
-                  <button
-                    onClick={handleInstallClick}
-                    className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-sky-600/80 border border-sky-500/80 rounded-md text-sm text-sky-100 hover:bg-sky-600 hover:border-sky-500 transition-colors"
-                    aria-label="Install App"
-                  >
-                    <InstallIcon className="w-5 h-5" />
-                    <span className="hidden sm:inline">Install App</span>
-                  </button>
-                )}
-                <button
-                  onClick={() => setCurrentView('guide')}
-                  className="hidden sm:flex items-center space-x-2 px-3 sm:px-4 py-2 bg-slate-800/70 border border-[var(--surface-border)] rounded-md text-sm text-slate-300 hover:bg-slate-700/80 hover:border-slate-600 transition-colors"
-                >
-                  <BookOpenIcon className="w-5 h-5" />
-                  <span className="hidden sm:inline">Guide</span>
-                </button>
-                <button
-                  onClick={handleExport}
-                  disabled={messages.length === 0 || isChatDisabled}
-                  className="hidden sm:flex items-center space-x-2 px-3 sm:px-4 py-2 bg-slate-800/70 border border-[var(--surface-border)] rounded-md text-sm text-slate-300 hover:bg-slate-700/80 hover:border-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ExportIcon className="w-5 h-5" />
-                  <span className="hidden sm:inline">Export</span>
-                </button>
-                <button
-                  onClick={() => setIsSettingsOpen(true)}
-                  className="p-2 bg-slate-800/70 border border-[var(--surface-border)] rounded-md text-slate-300 hover:bg-slate-700/80 hover:border-slate-600 transition-colors"
-                  aria-label="Open Settings"
-                >
-                  <SettingsIcon className="w-5 h-5" />
-                </button>
-              </div>
-            </header>
+                <div className="flex items-center space-x-2">
+                    <button onClick={handleInstall} className="px-3 py-1 bg-white/90 text-sky-800 text-sm font-semibold rounded-md hover:bg-white">Install</button>
+                    <button onClick={() => setShowInstallBanner(false)} className="p-1 text-white/80 hover:text-white"><CloseIcon className="w-5 h-5"/></button>
+                </div>
+            </div>
+        )}
+      </div>
 
-            <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 sm:space-y-8 custom-scrollbar">
-              {messages.length === 0 && loadingState === 'idle' ? (
-                <SuggestionPills onSuggestionClick={handleSuggestionClick} />
-              ) : (
-                messages.map((msg) => (
-                  <ChatMessage
-                    key={msg.id}
-                    message={msg}
-                    onSpeak={speak}
-                    onCancelSpeak={cancel}
-                    speakingMessageId={speakingMessageId}
-                  />
-                ))
-              )}
-              <div ref={chatEndRef} />
-            </main>
-
-            <footer className="p-3 sm:p-4 border-t border-[var(--surface-border)] shrink-0">
-              <div className="max-w-3xl mx-auto">
-                {/* --- PWA Install Banner --- */}
-                {showInstallBanner && installPrompt && (
-                  <div className="install-banner-animation mb-3 p-3 flex items-center justify-between gap-3 bg-gradient-to-r from-sky-900/80 to-slate-800/80 border border-sky-700/60 rounded-lg shadow-lg">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <InstallIcon className="w-9 h-9 text-sky-300 shrink-0 p-1" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-sky-100 leading-tight">
-                          Download RotorWise AI now and get instant diagnostics, symptom tracking, and expert insights—all from your phone.
-                        </p>
-                        <blockquote className="mt-1.5 text-xs text-sky-300 border-l-2 border-sky-600 pl-2 italic">
-                          Tap below to install and start your smarter driving journey today!
-                        </blockquote>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                       <button 
-                         onClick={handleDismissInstall}
-                         className="px-3 py-1.5 text-sky-300 hover:text-white hover:bg-sky-800/50 rounded-md text-sm transition-colors"
-                         aria-label="Dismiss install banner"
-                       >
-                         Later
-                       </button>
-                       <button 
-                         onClick={handleInstallClick}
-                         className="px-4 py-1.5 bg-sky-500 text-white rounded-md text-sm font-semibold hover:bg-sky-400 transition-colors flex items-center gap-2"
-                       >
-                         <InstallIcon className="w-4 h-4" />
-                         <span>Install Now</span>
-                       </button>
-                    </div>
-                  </div>
-                )}
-                {video && (
-                  <div className="relative inline-block mb-2 ml-2">
-                    <video src={video} controls className="w-40 h-auto object-cover rounded-md border-2 border-[var(--surface-border)]" />
-                    <button
-                      onClick={() => {
-                        setVideo(null);
-                        if (fileInputRef.current) fileInputRef.current.value = '';
-                      }}
-                      className="absolute -top-2 -right-2 bg-slate-800 text-white rounded-full p-1 border-2 border-slate-600 hover:bg-red-500 transition-colors"
-                      aria-label="Remove video"
-                    >
-                      <CloseIcon className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
-                {image && (
-                  <div className="relative inline-block mb-2 ml-2">
-                    <img src={image} alt="Upload preview" className="w-20 h-20 object-cover rounded-md border-2 border-[var(--surface-border)]" />
-                    <button
-                      onClick={() => {
-                        setImage(null);
-                        if (fileInputRef.current) fileInputRef.current.value = '';
-                      }}
-                      className="absolute -top-2 -right-2 bg-slate-800 text-white rounded-full p-1 border-2 border-slate-600 hover:bg-red-500 transition-colors"
-                      aria-label="Remove image"
-                    >
-                      <CloseIcon className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
-                <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className={`flex items-center space-x-2 sm:space-x-3 bg-slate-800/80 rounded-xl border border-[var(--surface-border)] focus-within:ring-2 focus-within:ring-[var(--accent-primary)] transition-shadow p-1 ${isChatDisabled ? 'opacity-60' : ''}`}>
-                  <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*,video/*" className="hidden" />
-                  <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isChatDisabled} className="p-2 text-[var(--text-secondary)] hover:text-[var(--accent-secondary)] disabled:text-slate-600 disabled:cursor-not-allowed transition-colors rounded-full">
-                    <PaperclipIcon className="w-6 h-6" />
-                  </button>
-                  <textarea
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                    placeholder={placeholderText}
-                    className="flex-1 w-full bg-transparent p-2 text-sm sm:text-base text-slate-200 placeholder-slate-500 focus:outline-none resize-none custom-scrollbar"
-                    disabled={isChatDisabled}
-                    rows={1}
-                  />
-                  <div className="relative flex items-center">
-                    <button type="button" onClick={toggleListening} disabled={isChatDisabled} className="p-2 text-[var(--text-secondary)] hover:text-[var(--accent-secondary)] disabled:text-slate-600 disabled:cursor-not-allowed transition-colors rounded-full">
-                       <MicrophoneIcon className={`w-6 h-6 ${isListening ? 'text-[var(--accent-primary)]' : ''}`} />
-                    </button>
-                    {isListening && <div className="absolute inset-0 pulse-ring-animation" aria-hidden="true"></div>}
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={isChatDisabled || (!input.trim() && !image && !video)}
-                    className="p-3 bg-[var(--accent-primary)] text-white rounded-lg disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed hover:bg-orange-500 transition-colors"
-                    aria-label="Send message"
-                  >
-                    {isChatDisabled ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <SendIcon className="w-6 h-6" />}
-                  </button>
-                </form>
-              </div>
-            </footer>
-          </div>
-        </div>
-      )}
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+        apiKey={apiKey}
+        onSaveApiKey={handleSaveApiKey}
+        onOpenPrivacyPolicy={() => setCurrentView('privacy')}
+        isPreconfigured={isApiKeyPreconfigured}
       />
     </div>
   );
-};
+}
 
 export default App;

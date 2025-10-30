@@ -19,58 +19,28 @@ RotorWise AI is a specialized diagnostic assistant built for Mazda RX-8 owners a
 
 - **Frontend**: React with TypeScript for a robust and type-safe user interface.
 - **AI Backend**: Google Gemini API (`@google/genai`) for advanced reasoning and multimodal understanding.
-- **Styling**: Tailwind CSS (loaded via CDN) for rapid, utility-first styling.
-- **Architecture**: A "buildless" development setup using native ES Modules and an **Import Map** in `index.html`. This allows the browser to load dependencies directly from a CDN without requiring a bundler like Webpack or Vite.
+- **Styling**: Tailwind CSS for rapid, utility-first styling.
 - **Libraries**:
     - `react-markdown`: To render the AI's structured diagnostic reports.
     - `jspdf`: For the PDF export functionality.
 
-## 📦 Project Configuration
+## 🏁 Getting Started & Configuration
 
-This project now includes a `package.json` file to formally list its dependencies for better IDE integration (e.g., TypeScript type checking) and to prepare for a potential future migration to a bundled build system.
+This project is designed with a flexible API key configuration, supporting two primary runtime methods.
 
-**Current Architecture:**
-The application currently runs in a **"buildless"** mode. It uses an **Import Map** in `index.html` to load all dependencies directly from a CDN. This means you don't need to run `npm install` for the app to work in the browser.
+### Method 1: Static Site (User-Provided Key)
+This is the simplest way to run the app, requiring no build tools.
 
-**Note on `npm start`:**
-The `package.json` includes a `start` script (`"start": "react-scripts start"`). Please be aware that this script **will not work** with the current file structure. It is included as a placeholder for a future migration to a standard Create React App setup. To run the project now, follow the "Getting Started" instructions below.
+1.  **Serve Files**: Use a simple local web server (like Python's `http.server` or the VS Code Live Server extension) from the project's root directory.
+2.  **Provide Key**: Open the app in your browser. You will be prompted to enter your Google Gemini API key in the settings modal. The key is saved in your browser's local storage for future use.
 
-## 🏁 Getting Started
+### Method 2: Vite Build (Pre-configured Key)
+For development or deployment, you can use Vite to pre-configure the API key. This requires a Node.js environment with the necessary dependencies (like Vite, React, etc.) installed.
 
-### Prerequisites
-
-1.  **Node.js and npm**: While the app runs without a build step, `npm` is useful for IDE integration. [Install Node.js here](https://nodejs.org/).
-2.  **Local Web Server**:
-    - **Using Python**: `python -m http.server`
-    - **VS Code Extension**: [Live Server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer)
-
-### Configuration
-
-The application requires a Google Gemini API key to function. This key must be available in the execution environment.
-
-- **API Key**: The application is hardcoded to look for the API key in `process.env.API_KEY`. Your serving environment must make this variable accessible to the client-side code.
-
-### Running the Application
-
-1.  **Clone the repository:**
-    ```bash
-    git clone <repository-url>
-    cd <repository-directory>
-    ```
-2.  **(Optional) Install Dev Dependencies:** For better type checking and editor support, run:
-    ```bash
-    npm install
-    ```
-    *Note: This step is not required to run the application, as it loads dependencies from a CDN.*
-
-3.  **Set up the API Key:**
-    Ensure your local server or deployment environment injects the `API_KEY`.
-
-4.  **Serve the project root:**
-    Start your local web server from the root directory of the project (the one containing `index.html`).
-
-5.  **Open in browser:**
-    Navigate to the local address provided by your server (e.g., `http://localhost:8000`). The application should load and be ready to use.
+1.  **Create `.env` file**: In the project root, create a file named `.env`.
+2.  **Set API Key**: Add your key to the `.env` file:
+    `GEMINI_API_KEY="YOUR_API_KEY_HERE"`
+3.  **Run with Vite**: Start the Vite development server. The `vite.config.js` file is configured to automatically make this key available to the application. The app will detect the pre-configured key and will not prompt the user to enter one.
 
 ## 📂 File Structure
 
@@ -80,8 +50,8 @@ The application requires a Google Gemini API key to function. This key must be a
 ├── index.html                # Entry point, import map, and Tailwind CSS setup.
 ├── index.tsx                 # Renders the React app into the DOM.
 ├── metadata.json             # Application metadata and permissions.
-├── package.json              # Project dependencies and scripts.
 ├── README.md                 # This file.
+├── vite.config.js            # Configuration for the Vite build tool.
 ├── types.ts                  # TypeScript type definitions (Message, Session).
 ├── components/
 │   ├── ChatMessage.tsx       # Renders a single user or AI message bubble.
